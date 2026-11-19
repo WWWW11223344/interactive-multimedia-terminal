@@ -1,0 +1,7 @@
+COMMAND: G:\io\multimedia-terminal\build-host\terminal_tests.exe
+PASS: 2048 merge/directions/no-op/score/win/loss and 20000 mass checks
+PASS: BMP padding/high bytes/top-down/truncation/invalid dimensions and edge clipping
+PASS: four screens, brush/colour/clear, unique saves, album paging/photo wrap, game restart and drag cancellation
+ALL TESTS PASSED (host software simulation; hardware not exercised)
+
+EXIT CODE: 0

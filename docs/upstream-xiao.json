@@ -1,0 +1,18 @@
+{
+  "original_project": "G:\\io\\01-多媒体娱乐终端项目设计方案\\GZ2418-肖林祥-多媒体娱乐终端\\GZ2418-肖林祥-多媒体娱乐终端\\GZ2418-肖林祥-多媒体娱乐终端\\project",
+  "files": {
+    "res\\pic\\game\\21.bmp": "5afaa8e35f93f87004d02933249dc1259db3473ebc0e565b2c35e580b2c65daa",
+    "res\\pic\\game\\7.bmp": "673f6a2b180a5633164829a0e608403251c459fe9db524c192fd41748cb7b3db",
+    "res\\pic\\game\\8.bmp": "0fe3eef613d2b6d919da11a23dc389fbd4bcb5a4dd01152e00904f27fd9150dc",
+    "res\\pic\\game\\a.bmp": "07e9c9a97ef7245684e368f799f5893a65cf1b430cfed5f992ecd5ab73b69345",
+    "res\\pic\\game\\10.bmp": "e7fee67bb484a95e4f038cf47e082cfae5ff43ed08d68bcd3102de011ea7e7b8",
+    "res\\pic\\game\\12.bmp": "97675ad7e239dc553329d31b8af41ee895447a0df8936084d30d771bbd76f850",
+    "res\\pic\\game\\13.bmp": "9c3de5ce3e4022f291a03ee6fe35070db05c02ba761b34173faa4942593d9af9",
+    "res\\pic\\game\\14.bmp": "29c648d23dd4da6d186f21a0863ad4492e38ae7ff4ad11bf6319b971e59bb0ab",
+    "res\\pic\\game\\15.bmp": "9edad50776d7b15d8e88128db01a93063ec58d8cb0a213c8e88fe44e19be8eea",
+    "res\\pic\\game\\16.bmp": "2df4e2f6feec8353bd8cced0f31d6b74a52e342bbffa7cb17e7cb765a31d402e",
+    "res\\pic\\game\\17.bmp": "c4f4e2a3d2092ca47b8844b12cd246ba8efda0514c937c3e5cacaf2739f76c84",
+    "res\\pic\\game\\18.bmp": "6939957749f4199973167c75de7cca10e4f7ded88f522fcec69a6f65b467cd4f",
+    "src/game.c": "7bdf8f8c918cb40bd8141a729fdc08ab9b8c10a4d36bbd3376e6e2a387df372f"
+  }
+}

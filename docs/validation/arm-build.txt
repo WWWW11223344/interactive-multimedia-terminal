@@ -1,0 +1,4 @@
+COMMAND: powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_arm.ps1
+Built build-arm/terminal (ARMv7-A, EABI soft-float, static musl; board validation still required).
+
+EXIT CODE: 0

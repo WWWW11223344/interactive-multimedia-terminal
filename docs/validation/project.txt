@@ -1,0 +1,7 @@
+COMMAND: python tools/verify_project.py --upstream --artifacts
+UPSTREAM PASS: upstream-files.json: 74 files unchanged
+UPSTREAM PASS: upstream-xiao.json: 13 files unchanged
+ARM ELF PASS: 1160788 bytes, flags=0x05000200, static EABI5 soft-float
+PROJECT PASS: 150 checks (mechanical boundaries only; board not tested)
+
+EXIT CODE: 0

@@ -1,0 +1,8 @@
+COMMAND: cmake --build build-host -j 4
+[ 10%] Built target upstream_font
+[ 63%] Built target terminal_core
+[ 73%] Built target terminal_tests
+[ 84%] Built target terminal_demo
+[100%] Built target terminal
+
+EXIT CODE: 0

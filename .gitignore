@@ -1,0 +1,9 @@
+/build*/
+/bin/
+/dist/
+/data/drawings/*.bmp
+/data/test-*/
+__pycache__/
+*.o
+*.d
+/docs/screenshots/*.bmp

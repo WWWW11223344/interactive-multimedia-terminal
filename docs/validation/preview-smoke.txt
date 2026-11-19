@@ -1,0 +1,5 @@
+Preview client: 800x480
+PASS: actual Win32 window startup, mouse draw, nonblank BMP save, album/photo/game navigation and normal exit
+Temporary drawing folder cleaned automatically; no user drawings touched; board not tested.
+
+EXIT CODE: 0
