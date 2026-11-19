@@ -42,7 +42,8 @@ def zip_bundle(name, files, texts):
             info.external_attr = (stat.S_IFREG | mode) << 16
             info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, blob)
-            hashes[rel] = hashlib.sha256(blob).hexdigest()
+            if rel != "FILES-SHA256.txt":
+                hashes[rel] = hashlib.sha256(blob).hexdigest()
 
         for source, rel in sorted(files, key=lambda item: item[1]):
             write(rel, source.read_bytes(), rel.endswith(".sh") or rel == "bin/terminal")
@@ -80,7 +81,7 @@ def main():
             if path.parent.name == "screenshots" and path.suffix.lower() == ".bmp":
                 continue  # Recreated by tests; labelled PNGs are in the report.
             source.append((path, path.relative_to(ROOT).as_posix()))
-    for name in ("README.md", ".gitignore", "CMakeLists.txt", "Makefile", "run.sh", "run-preview.cmd", "requirements-docs.txt"):
+    for name in ("README.md", ".gitignore", ".gitattributes", "CMakeLists.txt", "Makefile", "run.sh", "run-preview.cmd", "requirements-docs.txt"):
         source.append((ROOT / name, name))
     texts = {"源码包说明.txt": "从此目录构建。运行依赖为 res；data/drawings 为保存目录。\n"
              "视频由学生自行录制，录制提纲见 docs/演示讲稿.md。板端程序尚待实机验收。\n"

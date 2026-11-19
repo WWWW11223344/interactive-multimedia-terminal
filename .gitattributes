@@ -1,0 +1,2 @@
+# Preserve actual file bytes when restoring the project on Windows or Linux.
+* -text
