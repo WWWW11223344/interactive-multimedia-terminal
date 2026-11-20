@@ -3,8 +3,10 @@ COMMAND: cmake --build build-host -j 4
 [ 15%] Built target board_tests
 [ 68%] Built target terminal_core
 [ 75%] Built target terminal_tests
-[ 93%] Built target terminal
-[ 93%] Built target terminal_demo
-[100%] Built target touch_cal_tests
+[ 81%] Building C object CMakeFiles/terminal.dir/src/system/calibrate.c.obj
+[ 84%] Built target terminal_demo
+[ 90%] Built target touch_cal_tests
+[ 93%] Linking C executable terminal.exe
+[100%] Built target terminal
 
 EXIT CODE: 0

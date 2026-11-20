@@ -5,10 +5,10 @@ Test project G:/io/multimedia-terminal/build-host
     Start 2: touch_calibration
 2/3 Test #2: touch_calibration ................   Passed    0.01 sec
     Start 3: terminal_regression
-3/3 Test #3: terminal_regression ..............   Passed    0.47 sec
+3/3 Test #3: terminal_regression ..............   Passed    0.50 sec
 
 100% tests passed, 0 tests failed out of 3
 
-Total Test time (real) =   0.53 sec
+Total Test time (real) =   0.56 sec
 
 EXIT CODE: 0

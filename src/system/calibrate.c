@@ -17,7 +17,7 @@
 
 #define CAL_TICK_MS 200
 #define CAL_HINT_TICKS 50      /* 10 s: tell the user how to skip */
-#define CAL_GIVE_UP_TICKS 150  /* 30 s: carry on with the declared range */
+#define CAL_GIVE_UP_TICKS 300  /* 60 s without a touch: carry on with the declared range */
 
 static const char *const g_prompt[TOUCH_CAL_POINTS] = {
     "请点击左侧上方的十字中心",
