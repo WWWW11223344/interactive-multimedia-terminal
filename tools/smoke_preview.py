@@ -13,6 +13,21 @@ from PIL import Image, ImageChops
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def ensure_demo_account(root):
+    """The login screen only accepts accounts already in data/accounts.txt.
+
+    A freshly extracted package has an empty data folder, so the smoke check would
+    stall on the login page and never reach the drawing board. Append the demo
+    account the login screen advertises, exactly as tests/test_terminal.c does.
+    """
+    path = Path(root) / "data" / "accounts.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
+    if "123456 123456" not in existing:
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write("123456 123456\n")
+
+
 def main(exe, resource_root):
     if os.name != "nt":
         raise RuntimeError("This smoke check is for the Windows preview")
@@ -27,6 +42,7 @@ def main(exe, resource_root):
     user.GetClientRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
     with tempfile.TemporaryDirectory(prefix="terminal-preview-") as temp:
         output = Path(temp) / "drawings"
+        ensure_demo_account(resource_root)
         process = subprocess.Popen([str(exe), "--root", str(resource_root), "--data", str(output)],
                                    cwd=resource_root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                    creationflags=subprocess.CREATE_NO_WINDOW)
@@ -64,30 +80,39 @@ def main(exe, resource_root):
                 event(0x201, x, y, 1)
                 event(0x202, x, y)
 
-            time.sleep(0.2)
-            click(640, 260)  # Home -> board.
+            time.sleep(0.3)
+            # Sign in: type 123456 twice on the nine-grid keypad, then 确认.
+            for _ in range(2):
+                for key in range(6):
+                    click(432 + (key % 3) * 112 + 52, 190 + (key // 3) * 68 + 30)
+            click(708, 430)          # 确认
+            time.sleep(1.6)          # let the success animation finish and land on home
+            click(640, 260)          # home -> 创意画板
             event(0x201, 100, 220, 1)
             for x, y in ((120, 230), (160, 250), (210, 280), (250, 300)):
                 event(0x200, x, y, 1)
             event(0x202, 250, 300)
-            click(720, 40)
+            click(720, 40)           # 保存
             files = list(output.glob("*.bmp"))
             assert len(files) == 1, "Native window save did not produce one drawing"
             with Image.open(files[0]) as drawing:
                 assert drawing.size == (752, 286)
                 assert ImageChops.difference(drawing.convert("RGB"), Image.new("RGB", drawing.size, "white")).getbbox(), "Saved drawing is blank"
             click(60, 40)
-            click(140, 260)  # Album -> saved photo.
+            click(140, 260)          # home -> 电子相册 -> saved drawing
             click(100, 140)
             click(60, 40)
-            click(390, 260)  # Game -> start -> direction.
-            click(690, 40)
-            click(500, 300)
-            click(60, 40)
-            click(720, 40)  # Normal application exit.
+            click(390, 260)          # home -> 小游戏列表
+            click(212, 180)          # 2048
+            click(690, 40)           # 开始 / 重新开始
+            click(500, 300)          # 下 方向卡片
+            click(60, 40)            # 返回小游戏列表
+            click(60, 40)            # 返回主页
+            click(720, 40)           # Normal application exit.
             stdout, stderr = process.communicate(timeout=5)
             assert process.returncode == 0, (process.returncode, stdout, stderr)
-            print("PASS: actual Win32 window startup, mouse draw, nonblank BMP save, album/photo/game navigation and normal exit")
+            print("PASS: actual Win32 window startup, keypad login, mouse draw, nonblank BMP save, "
+                  "album/photo/小游戏/2048 navigation and normal exit")
             print("Temporary drawing folder cleaned automatically; no user drawings touched; board not tested.")
         finally:
             if process.poll() is None:

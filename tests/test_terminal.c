@@ -107,14 +107,42 @@ static void screenshot(App *app, const char *name)
     app_render(app); assert(image_save(path,&app->screen));
 }
 
+/* The demo account is the one the login screen advertises; appending it keeps any
+   account a previous run registered, and credential_ok stops at the first match. */
+static void ensure_demo_account(void)
+{
+    FILE *file = fopen("data/accounts.txt","a");
+    if (file) { fputs("123456 123456\n",file); fclose(file); }
+}
+
+/* Type 123456 twice on the nine-grid keypad, press 确认, then let the animation run:
+   the same path a user takes from power-on to the home screen. */
+static void sign_in(App *app)
+{
+    static const int keys[6] = {0,1,2,3,4,5};
+    for (int round = 0; round < 2; ++round) {
+        for (int i = 0; i < 6; ++i) {
+            click(app,432 + (keys[i] % 3) * 112 + 52, 190 + (keys[i] / 3) * 68 + 30);
+        }
+    }
+    click(app,432 + 2 * 112 + 52, 190 + 3 * 68 + 30);   /* 确认 */
+    assert(app->login.fxFrame > 0);
+    for (int frame = 0; frame <= 60; ++frame) { app_tick(app); }
+    assert(app->page == PAGE_HOME);
+}
+
 /* End-to-end save->rescan->thumbnail->photo, plus game/start/restart/navigation. */
 static void test_app(const char *directory)
 {
     static App app;
-    assert(app_open(&app,directory)); screenshot(&app,"01-home");
+    ensure_demo_account();
+    assert(app_open(&app,directory)); screenshot(&app,"00-login");
+    assert(app.page == PAGE_LOGIN);
+    sign_in(&app);
+    screenshot(&app,"01-home");
     click(&app,600,260); assert(app.page == PAGE_BOARD);
     click(&app,90,110); assert(app.color == 1);
-    click(&app,575,110); assert(app.radius == 7);
+    click(&app,660,110); assert(app.radius == 7);
     app_event(&app,(Event){EVENT_DOWN,110,350});
     app_event(&app,(Event){EVENT_MOVE,220,220}); app_event(&app,(Event){EVENT_MOVE,330,350});
     app_event(&app,(Event){EVENT_UP,110,350});
@@ -132,20 +160,57 @@ static void test_app(const char *directory)
     assert(memcmp(app.drawing.pixels,app.album.photo.pixels,752*286*sizeof(uint32_t)) == 0);
     screenshot(&app,"04-photo");
     click(&app,270,445); assert(app.album.selected == 7);
-    click(&app,520,445); assert(app.album.selected == 0);
+    click(&app,640,445); assert(app.album.selected == 0);
     click(&app,70,445); assert(app.page == PAGE_ALBUM);
     click(&app,705,445); assert(app.album.page == 1);
     click(&app,70,445); assert(app.album.page == 0);
-    click(&app,50,40); click(&app,350,250); assert(app.page == PAGE_GAME);
+    /* 相册 → 小游戏列表（四个入口）→ 2048 */
+    click(&app,50,40); click(&app,350,250); assert(app.page == PAGE_GAMES);
+    screenshot(&app,"05-games");
+    click(&app,212,180); assert(app.page == PAGE_2048);
     click(&app,680,40); assert(app.game.started);
-    for (int i = 0; i < 12; ++i) { click(&app,i%2 ? 680 : 490,300); click(&app,590,235); }
-    screenshot(&app,"05-game");
+    for (int i = 0; i < 12; ++i) { click(&app,i%2 ? 680 : 490,300); click(&app,496,170); }
+    screenshot(&app,"06-game");
     click(&app,680,40); assert(app.game.score == 0 && !app.game.over);
-    click(&app,50,40); click(&app,600,250); assert(app.page == PAGE_BOARD);
+    /* 返回 climbs one level: leaving a game lands on the list, not on the home screen. */
+    click(&app,50,40); assert(app.page == PAGE_GAMES);
+    /* 五子棋：玩家落天元，电脑必须应手，所以盘上至少两子 */
+    click(&app,588,180); assert(app.page == PAGE_GOMOKU);
+    click(&app,30+7*25,96+7*25);
+    {
+        int stones = 0;
+        for (int i = 0; i < GOMOKU_CELLS; ++i) { if (app.gomoku.cell[i]) { ++stones; } }
+        assert(stones >= 2 && app.gomoku.turn == 1);
+    }
+    screenshot(&app,"07-gomoku");
+    click(&app,50,40); assert(app.page == PAGE_GAMES);
+    /* 井字棋：玩家左上角落子，电脑立即应手 */
+    click(&app,212,348); assert(app.page == PAGE_TOE);
+    click(&app,100,148);                 /* 左上格中心（格心 112px，棋盘 44,92 起） */
+    {
+        int stones = 0;
+        for (int i = 0; i < TOE_CELLS; ++i) { if (app.toe.cell[i]) { ++stones; } }
+        assert(stones >= 2);
+    }
+    screenshot(&app,"08-toe");
+    click(&app,50,40); assert(app.page == PAGE_GAMES);
+    /* 中国象棋：选中红兵前进一格，轮到黑方 */
+    click(&app,588,348); assert(app.page == PAGE_CHESS);
+    click(&app,30,100+6*37); assert(app.chess.sel == 6*9);      /* 红兵：格心 30,322 */
+    click(&app,30,100+5*37); assert(app.chess.cell[5*9] == 7 && app.chess.side == -1);
+    click(&app,30,100+3*37); assert(app.chess.sel == 3*9);      /* 黑卒可选中，过河后才能横走 */
+    screenshot(&app,"09-chess");
+    click(&app,50,40); assert(app.page == PAGE_GAMES);
+    click(&app,50,40); assert(app.page == PAGE_HOME);
+    click(&app,600,250); assert(app.page == PAGE_BOARD);
     click(&app,585,40); assert(app.drawing.pixels[0] == 0xFFFFFF);
     click(&app,50,40);
+    /* Either endpoint counts, because the panel's press and release samples rarely
+       agree: a drag that starts on a card opens it. */
     app_event(&app,(Event){EVENT_DOWN,110,250}); app_event(&app,(Event){EVENT_UP,400,50});
-    assert(app.page == PAGE_HOME); /* a drag off a button must not activate it */
+    assert(app.page == PAGE_ALBUM);
+    click(&app,50,40); assert(app.page == PAGE_HOME);
+    /* A cancelled gesture activates nothing at all. */
     app_event(&app,(Event){EVENT_DOWN,110,250}); app_event(&app,(Event){EVENT_CANCEL,0,0});
     app_event(&app,(Event){EVENT_UP,110,250}); assert(app.page == PAGE_HOME);
     /* Corrupt files and count limits must remain navigable, without overrunning path storage. */
@@ -158,7 +223,8 @@ static void test_app(const char *directory)
     click(&app,100,140); assert(app.page == PAGE_PHOTO); /* corrupt entry: error or valid drawing */
     app_render(&app); click(&app,520,445); app_render(&app);
     app_close(&app);
-    puts("PASS: four screens, brush/colour/clear, unique saves, album paging/photo wrap, game restart and drag cancellation");
+    puts("PASS: login/home/album/photo/2048/五子棋/井字棋/象棋/board navigation, brush-colour-clear, "
+         "unique saves, album paging, game restart and drag cancellation");
 }
 
 /* Test folders are unique to this process; cleanup never touches the user's drawings. */

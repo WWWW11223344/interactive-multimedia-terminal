@@ -51,9 +51,11 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wParam, LP
 }
 
 /* Fixed client size matches the target LCD; no hidden alternative rendering path. */
-bool platform_open(const char *fbPath, const char *touchPath, bool swapXY, bool invertX, bool invertY)
+bool platform_open(const char *fbPath, const char *touchPath, bool swapXY, bool invertX, bool invertY,
+                   int xBias, int yBias)
 {
     (void)fbPath; (void)touchPath; (void)swapXY; (void)invertX; (void)invertY;
+    (void)xBias; (void)yBias;
     SetProcessDPIAware();
     HINSTANCE instance = GetModuleHandleW(NULL);
     WNDCLASSW cls = {0};
@@ -90,6 +92,13 @@ void platform_present(const Image *image)
     InvalidateRect(g_window,NULL,FALSE); UpdateWindow(g_window);
 }
 
+/* The preview repaints whole frames; partial presentation is a device-only path. */
+void platform_present_area(const Image *image, Rect area)
+{
+    (void)area;
+    platform_present(image);
+}
+
 /* Destroy the window before the main loop frees its image buffer. */
 void platform_close(void)
 {
@@ -116,6 +125,8 @@ static int g_rawX, g_rawY;
 static bool g_down, g_reported, g_seenX, g_seenY, g_dropped, g_swap, g_invertX, g_invertY;
 static bool g_blocked;
 static int g_slot;
+/* Signed axis corrections, set from --x-bias/--y-bias at startup. */
+static int g_xBias, g_yBias;
 
 /* Cleanup is safe after any partial initialization failure. */
 void platform_close(void)
@@ -126,9 +137,11 @@ void platform_close(void)
 }
 
 /* Reject unknown colour layouts rather than writing a wrongly sized framebuffer. */
-bool platform_open(const char *fbPath, const char *touchPath, bool swapXY, bool invertX, bool invertY)
+bool platform_open(const char *fbPath, const char *touchPath, bool swapXY, bool invertX, bool invertY,
+                   int xBias, int yBias)
 {
     g_swap = swapXY; g_invertX = invertX; g_invertY = invertY;
+    g_xBias = xBias; g_yBias = yBias;
     g_fb = open(fbPath,O_RDWR);
     if (g_fb < 0 || ioctl(g_fb,FBIOGET_VSCREENINFO,&g_var) < 0 ||
         ioctl(g_fb,FBIOGET_FSCREENINFO,&g_fix) < 0) { goto failed; }
@@ -217,6 +230,10 @@ int platform_poll(Event *event, int timeoutMs)
             int x = scale_axis(g_swap ? g_rawY : g_rawX,g_swap ? g_axisY : g_axisX,800);
             int y = scale_axis(g_swap ? g_rawX : g_rawY,g_swap ? g_axisX : g_axisY,480);
             if (g_invertX) { x = 799-x; } if (g_invertY) { y = 479-y; }
+            /* Signed panel correction from --x-bias/--y-bias, applied after any mirroring. */
+            x += g_xBias; y += g_yBias;
+            if (x < 0) { x = 0; } if (x > 799) { x = 799; }
+            if (y < 0) { y = 0; } if (y > 479) { y = 479; }
             event->x = x; event->y = y;
             event->type = g_down ? (g_reported ? EVENT_MOVE : EVENT_DOWN) :
                 g_reported ? EVENT_UP : EVENT_NONE;
@@ -234,18 +251,38 @@ static uint32_t pack_channel(uint32_t rgb, unsigned int shift, struct fb_bitfiel
     return ((((rgb >> shift)&255) * ((1u << field.length)-1u) + 127u)/255u) << field.offset;
 }
 
-/* Respect stride and visible offsets; memcpy avoids alignment assumptions on mapped rows. */
-void platform_present(const Image *image)
+/* Respect stride and visible offsets. When the panel is 32bpp with 8-bit channels in
+   the usual 16/8/0 positions the source already matches, so a frame is a row copy;
+   the generic path stays for 16bpp and any odd bitfield. */
+void platform_present_area(const Image *image, Rect area)
 {
     unsigned int bytes = g_var.bits_per_pixel/8;
-    for (unsigned int y = 0; y < 480; ++y) {
-        uint8_t *row = g_map + (y+g_var.yoffset)*g_fix.line_length + g_var.xoffset*bytes;
-        for (unsigned int x = 0; x < 800; ++x) {
-            uint32_t rgb = image->pixels[y*800+x];
-            uint32_t pixel = pack_channel(rgb,16,g_var.red) | pack_channel(rgb,8,g_var.green) |
-                pack_channel(rgb,0,g_var.blue) | pack_channel(0xFF,0,g_var.transp);
-            memcpy(row+x*bytes,&pixel,bytes);
+    int x0 = area.x < 0 ? 0 : area.x, y0 = area.y < 0 ? 0 : area.y;
+    int x1 = area.x + area.w, y1 = area.y + area.h;
+    if (x1 > (int)g_var.xres) { x1 = (int)g_var.xres; }
+    if (y1 > (int)g_var.yres) { y1 = (int)g_var.yres; }
+    if (x1 <= x0 || y1 <= y0) { return; }
+    bool direct = bytes == 4 && g_var.red.offset == 16 && g_var.red.length == 8 &&
+        g_var.green.offset == 8 && g_var.green.length == 8 &&
+        g_var.blue.offset == 0 && g_var.blue.length == 8 && !g_var.transp.length;
+    for (int y = y0; y < y1; ++y) {
+        uint8_t *row = g_map + ((unsigned int)y+g_var.yoffset)*g_fix.line_length +
+                       ((unsigned int)x0+g_var.xoffset)*bytes;
+        if (direct) {
+            memcpy(row, image->pixels + y*800 + x0, (size_t)(x1-x0)*4u);
+        } else {
+            for (int x = x0; x < x1; ++x) {
+                uint32_t rgb = image->pixels[y*800+x];
+                uint32_t pixel = pack_channel(rgb,16,g_var.red) | pack_channel(rgb,8,g_var.green) |
+                    pack_channel(rgb,0,g_var.blue) | pack_channel(0xFF,0,g_var.transp);
+                memcpy(row+(x-x0)*bytes,&pixel,bytes);
+            }
         }
     }
+}
+
+void platform_present(const Image *image)
+{
+    platform_present_area(image, (Rect){0,0,SCREEN_WIDTH,SCREEN_HEIGHT});
 }
 #endif

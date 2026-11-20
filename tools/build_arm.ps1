@@ -14,7 +14,10 @@ try {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
     $sources = @(
         "src/main.c", "src/System.c", "src/MainScreenSystem.c", "src/AlbumSystem.c",
-        "src/WhiteboardSystem.c", "src/GameSystem.c", "src/game.c", "src/system/lcd.c",
+        "src/WhiteboardSystem.c", "src/GameSystem.c", "src/GamesMenuSystem.c",
+        "src/GomokuSystem.c", "src/ToeSystem.c", "src/ChessSystem.c", "src/boardgames.c",
+        "src/LoginSystem.c", "src/game.c",
+        "src/system/lcd.c",
         "src/system/file_manager.c", "src/system/print.c", "src/system/platform.c"
     )
     # ARMv7-A soft-float EABI runs in the GEC6818's 32-bit Linux environment.

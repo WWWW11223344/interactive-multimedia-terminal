@@ -1,7 +1,88 @@
 COMMAND: G:\io\multimedia-terminal\build-host\terminal_tests.exe
+terminal build 1120e
+terminal build 1120e
+tap down=484,220 mid=484,220 up=484,220 page=0
+tap down=596,220 mid=596,220 up=596,220 page=0
+tap down=708,220 mid=708,220 up=708,220 page=0
+tap down=484,288 mid=484,288 up=484,288 page=0
+tap down=596,288 mid=596,288 up=596,288 page=0
+tap down=708,288 mid=708,288 up=708,288 page=0
+tap down=484,220 mid=484,220 up=484,220 page=0
+tap down=596,220 mid=596,220 up=596,220 page=0
+tap down=708,220 mid=708,220 up=708,220 page=0
+tap down=484,288 mid=484,288 up=484,288 page=0
+tap down=596,288 mid=596,288 up=596,288 page=0
+tap down=708,288 mid=708,288 up=708,288 page=0
+tap down=708,424 mid=708,424 up=708,424 page=0
+tap down=600,260 mid=600,260 up=600,260 page=2
+tap down=90,110 mid=90,110 up=90,110 page=10
+tap down=660,110 mid=660,110 up=660,110 page=10
+tap down=110,350 mid=330,350 up=110,350 page=10
+tap down=235,110 mid=235,110 up=235,110 page=10
+tap down=410,350 mid=590,350 up=410,350 page=10
+tap down=700,40 mid=700,40 up=700,40 page=10
+tap down=700,40 mid=700,40 up=700,40 page=10
+tap down=50,40 mid=50,40 up=50,40 page=10
+tap down=110,250 mid=110,250 up=110,250 page=2
+tap down=100,140 mid=100,140 up=100,140 page=3
+tap down=270,445 mid=270,445 up=270,445 page=4
+tap down=640,445 mid=640,445 up=640,445 page=4
+tap down=70,445 mid=70,445 up=70,445 page=4
+tap down=705,445 mid=705,445 up=705,445 page=3
+tap down=70,445 mid=70,445 up=70,445 page=3
+tap down=50,40 mid=50,40 up=50,40 page=3
+tap down=350,250 mid=350,250 up=350,250 page=2
+tap down=212,180 mid=212,180 up=212,180 page=5
+tap down=680,40 mid=680,40 up=680,40 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=490,300 mid=490,300 up=490,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,300 mid=680,300 up=680,300 page=6
+tap down=496,170 mid=496,170 up=496,170 page=6
+tap down=680,40 mid=680,40 up=680,40 page=6
+tap down=50,40 mid=50,40 up=50,40 page=6
+tap down=588,180 mid=588,180 up=588,180 page=5
+tap down=205,271 mid=205,271 up=205,271 page=7
+tap down=50,40 mid=50,40 up=50,40 page=7
+tap down=212,348 mid=212,348 up=212,348 page=5
+tap down=100,148 mid=100,148 up=100,148 page=8
+tap down=50,40 mid=50,40 up=50,40 page=8
+tap down=588,348 mid=588,348 up=588,348 page=5
+tap down=30,322 mid=30,322 up=30,322 page=9
+tap down=30,285 mid=30,285 up=30,285 page=9
+tap down=30,211 mid=30,211 up=30,211 page=9
+tap down=50,40 mid=50,40 up=50,40 page=9
+tap down=50,40 mid=50,40 up=50,40 page=5
+tap down=600,250 mid=600,250 up=600,250 page=2
+tap down=585,40 mid=585,40 up=585,40 page=10
+tap down=50,40 mid=50,40 up=50,40 page=10
+tap down=110,250 mid=110,250 up=400,50 page=2
+tap down=50,40 mid=50,40 up=50,40 page=3
+tap down=110,250 mid=110,250 up=110,250 page=2
+tap down=100,140 mid=100,140 up=100,140 page=3
+tap down=520,445 mid=520,445 up=520,445 page=4
 PASS: 2048 merge/directions/no-op/score/win/loss and 20000 mass checks
 PASS: BMP padding/high bytes/top-down/truncation/invalid dimensions and edge clipping
-PASS: four screens, brush/colour/clear, unique saves, album paging/photo wrap, game restart and drag cancellation
+PASS: login/home/album/photo/2048/五子棋/井字棋/象棋/board navigation, brush-colour-clear, unique saves, album paging, game restart and drag cancellation
 ALL TESTS PASSED (host software simulation; hardware not exercised)
 
 EXIT CODE: 0

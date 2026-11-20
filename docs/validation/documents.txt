@@ -1,4 +1,4 @@
-COMMAND: G:\ana\python.exe tools/build_docs.py
+COMMAND: C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.exe tools/build_docs.py
 Generated architecture.png, 5 labelled screenshots and project report.docx; no video generated.
 
 EXIT CODE: 0

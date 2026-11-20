@@ -8,7 +8,9 @@ add_library(upstream_font STATIC src/system/truetype.c)
 target_include_directories(upstream_font PRIVATE inc/system)
 add_library(terminal_core STATIC
     src/System.c src/MainScreenSystem.c src/AlbumSystem.c src/WhiteboardSystem.c
-    src/GameSystem.c src/game.c src/system/lcd.c src/system/file_manager.c src/system/print.c)
+    src/GameSystem.c src/GamesMenuSystem.c src/GomokuSystem.c src/ToeSystem.c
+    src/ChessSystem.c src/boardgames.c src/LoginSystem.c src/game.c
+    src/system/lcd.c src/system/file_manager.c src/system/print.c)
 target_include_directories(terminal_core PUBLIC inc PRIVATE inc/system)
 target_link_libraries(terminal_core PUBLIC upstream_font m)
 add_executable(terminal src/main.c src/system/platform.c)
@@ -31,10 +33,15 @@ if(TERMINAL_TESTS AND NOT CMAKE_CROSSCOMPILING)
     target_link_libraries(terminal_tests PRIVATE terminal_core)
     add_executable(terminal_demo tests/demo_terminal.c)
     target_link_libraries(terminal_demo PRIVATE terminal_core)
+    # Rules only: no display, no font, no touch. Milliseconds, so it can run first.
+    add_executable(board_tests tests/test_boards.c src/boardgames.c)
+    target_include_directories(board_tests PRIVATE inc)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(terminal_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(terminal_demo PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+        target_compile_options(board_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
     endif()
+    add_test(NAME board_rules COMMAND board_tests)
     add_test(NAME terminal_regression COMMAND terminal_tests)
     set_tests_properties(terminal_regression PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

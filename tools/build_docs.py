@@ -50,17 +50,17 @@ def architecture(font):
     box((70, 170, 1530, 290), "入口 main.c", ["参数解析 → 初始化 App / Platform → 主循环 → 关闭设备并释放资源"])
     arrow(530, 290, 530, 328)
     arrow(1300, 290, 1300, 328)
-    box((70, 330, 1030, 465), "应用 System.c / terminal.h", ["持有 App 状态、Page、Event；统一分发点击与滑动；dirty 按需重绘", "HOME / ALBUM / PHOTO / GAME / BOARD"])
+    box((70, 330, 1030, 465), "应用 System.c / terminal.h", ["持有 App 状态、Page、Event；统一分发点击与滑动；dirty 按需重绘", "HOME / ALBUM / PHOTO / GAMES / 棋牌四页 / BOARD"])
     box((1070, 330, 1530, 885), "平台 platform.c", ["platform.h 定义设备接口", "Linux：framebuffer / evdev", "Windows：Win32 桌面预览", "显示提交、输入轮询、关闭", "只处理设备差异"])
     for x in (220, 550, 880):
         arrow(x, 465, x, 508)
     box((70, 510, 370, 650), "主页 / 相册", ["时钟、入口、缩略图", "翻页、照片放大"])
     box((400, 510, 700, 650), "创意画板", ["颜色、笔触、清屏", "保存 BMP → 相册"])
-    box((730, 510, 1030, 650), "2048 界面", ["按钮 / 滑动 → 规则", "棋盘、得分、胜负"])
+    box((730, 510, 1030, 650), "小游戏界面", ["2048 / 五子棋 / 井字棋 / 象棋", "落点吸附 → 规则层"])
     for x in (220, 550, 880):
         arrow(x, 650, x, 698)
     box((70, 700, 700, 885), "基础能力 display.h", ["lcd.c / file_manager.c", "内存绘图、BMP 读写与扫描", "print.c → truetype.c → 内置字体"])
-    box((730, 700, 1030, 885), "2048 纯规则", ["game.c / game.h", "压缩、合并、计分、新格", "不引用界面与设备"])
+    box((730, 700, 1030, 885), "纯规则层", ["game.c 2048 · boardgames.c 棋类", "合并计分、连子判定、走子规则", "不引用界面与设备"])
     box((70, 920, 1530, 1055), "工程与验证", ["src / inc / lib / res   ·   CMake / Makefile   ·   tests / tools / docs", "主机规则与联动测试 + ARM 交叉编译已通过；显示、触摸和性能待上板验收"], "#e6f2f2")
     img.save(DOCS / "architecture.png")
 

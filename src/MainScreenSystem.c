@@ -1,4 +1,7 @@
-/* Xie Donghong desktop simplified by Codex, 2026-11-19: three entries and main-loop clock. */
+/* Xie Donghong desktop simplified by Codex, 2026-11-19: three entries and main-loop clock.
+ * 2026-11-20: the second card opens the game list instead of 2048 directly, because
+ * four games no longer fit as home cards and the list can grow without touching this
+ * layout again. */
 #include "terminal.h"
 #include <stdio.h>
 
@@ -8,7 +11,7 @@ void home_render(App *app)
     Image *screen = &app->screen;
     draw_rect(screen, (Rect){0,0,800,480}, UI_BG);
     draw_text(screen, 32, 24, 34, UI_INK, "触控休闲娱乐终端");
-    ui_button(app, (Rect){680,22,96,44}, "退出", false);
+    ui_button(app, (Rect){648,16,132,60}, "退出", false);
     time_t now = time(NULL);
     struct tm *local = localtime(&now);
     char clockText[64] = "--:--:--", dateText[64] = "";
@@ -18,8 +21,8 @@ void home_render(App *app)
     }
     draw_text(screen, 32, 82, 42, UI_TEAL, clockText);
     draw_text(screen, 240, 96, 21, UI_MUTED, dateText);
-    const char *names[] = {"电子相册", "2048 小游戏", "创意画板"};
-    const char *notes[] = {"浏览照片与画板作品", "滑动合并，挑战 2048", "随手画下你的灵感"};
+    const char *names[] = {"电子相册", "小游戏", "创意画板"};
+    const char *notes[] = {"浏览照片与画板作品", "四款小游戏任你挑", "随手画下你的灵感"};
     const uint32_t accents[] = {0x227C77,0xC58636,0xBA6256};
     for (int i = 0; i < 3; ++i) {
         int x = 32 + i * 253;
@@ -31,8 +34,15 @@ void home_render(App *app)
             draw_line(screen, x+35,247,x+66,219,3,accents[i]);
             draw_line(screen, x+66,219,x+99,247,3,accents[i]);
         } else if (i == 1) {
-            draw_image(screen, (Rect){x+25,184,58,70}, &app->tiles[1], false);
-            draw_image(screen, (Rect){x+87,184,58,70}, &app->tiles[2], false);
+            /* One mini board with a stone and a cross: reads as "more than one game"
+               without needing a new bitmap or a fifth icon slot. */
+            draw_rect(screen, (Rect){x+25,184,116,70}, 0xF3EDDF);
+            draw_line(screen, x+83,190,x+83,248,2,0x9A7A50);
+            draw_line(screen, x+31,219,x+135,219,2,0x9A7A50);
+            draw_disc(screen, x+57,202,9, 0x243A3B);
+            draw_disc(screen, x+57,202,4, 0x4C6567);
+            draw_line(screen, x+100,228,x+118,246,4,accents[i]);
+            draw_line(screen, x+118,228,x+100,246,4,accents[i]);
         } else {
             draw_line(screen,x+34,247,x+104,196,6,accents[i]);
             draw_disc(screen,x+130,240,12,0xE5B149);

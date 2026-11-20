@@ -46,6 +46,22 @@ static unsigned int read_codepoint(const unsigned char **text)
     return value;
 }
 
+/* Advance width in pixels, summed the same way draw_text advances the cursor, so
+   centred labels land on the pixel the rasterizer actually uses. */
+int text_width(const char *text, int size)
+{
+    if (!g_fontData || !text || size < 8 || size > 72) { return 0; }
+    float scale = stbtt_ScaleForPixelHeight(&g_font, (float)size);
+    const unsigned char *cursor = (const unsigned char *)text;
+    int width = 0;
+    while (*cursor) {
+        int codepoint = (int)read_codepoint(&cursor), advance;
+        stbtt_GetCodepointHMetrics(&g_font, codepoint, &advance, NULL);
+        width += (int)(advance * scale);
+    }
+    return width;
+}
+
 /* Rasterize into a fixed scratch buffer and alpha blend with clipping on all four edges. */
 void draw_text(Image *target, int x, int y, int size, uint32_t rgb, const char *text)
 {

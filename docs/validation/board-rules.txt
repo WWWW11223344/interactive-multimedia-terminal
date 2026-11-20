@@ -1,0 +1,10 @@
+COMMAND: build-host/board_tests.exe
+PASS: 五子棋 横/竖/两斜/贴边/长连 判胜，四连不判胜
+PASS: 五子棋 占用格/越界/终局后落子 一律拒绝
+PASS: 五子棋 AI 首手天元、堵活四、优先成五、回合交替正确
+PASS: 井字棋 三连/占用格/平局/终局锁定/胜利线坐标
+PASS: 井字棋 AI 全树搜索，玩家先手无法取胜；能堵也能抢先成三
+PASS: 象棋 马腿/象眼/象不过河/车挡/炮架/兵过河/九宫/越权 全部正确
+PASS: 象棋 将帅照面限制移动、吃将终局、终局锁定、has_move 判定
+ALL BOARD RULE TESTS PASSED (rules only; drawing and touch not exercised)
+EXIT CODE: 0

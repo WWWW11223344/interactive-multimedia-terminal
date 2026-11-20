@@ -36,6 +36,10 @@ def verify(upstream=False, artifacts=False, deliverables=False):
     for path in (ROOT / "src/game.c", ROOT / "inc/game.h"):
         includes = re.findall(r'#\s*include\s*"([^"]+)"', path.read_text(encoding="utf-8"))
         check(all(item == "game.h" for item in includes), f"Rule depends on UI: {path}")
+    # 棋类规则同样必须能脱离界面单独编译和测试（tests/test_boards.c 就只链接这一个文件）。
+    for path in (ROOT / "src/boardgames.c", ROOT / "inc/boardgames.h"):
+        includes = re.findall(r'#\s*include\s*"([^"]+)"', path.read_text(encoding="utf-8"))
+        check(all(item == "boardgames.h" for item in includes), f"Rule depends on UI: {path}")
     for name in ("MusicSystem.c", "VideoSystem.c", "LoginAndRegisterSystem.c"):
         check(not (ROOT / "src" / name).exists(), f"Removed feature remains: {name}")
     check((ROOT / "res/simfang.ttf").stat().st_size > 10000, "Missing font")
