@@ -10,10 +10,11 @@ add_library(terminal_core STATIC
     src/System.c src/MainScreenSystem.c src/AlbumSystem.c src/WhiteboardSystem.c
     src/GameSystem.c src/GamesMenuSystem.c src/GomokuSystem.c src/ToeSystem.c
     src/ChessSystem.c src/boardgames.c src/LoginSystem.c src/game.c
+    src/system/touch_cal.c
     src/system/lcd.c src/system/file_manager.c src/system/print.c)
 target_include_directories(terminal_core PUBLIC inc PRIVATE inc/system)
 target_link_libraries(terminal_core PUBLIC upstream_font m)
-add_executable(terminal src/main.c src/system/platform.c)
+add_executable(terminal src/main.c src/system/platform.c src/system/calibrate.c)
 target_link_libraries(terminal PRIVATE terminal_core)
 if(WIN32)
     target_link_libraries(terminal PRIVATE user32 gdi32)
@@ -36,12 +37,17 @@ if(TERMINAL_TESTS AND NOT CMAKE_CROSSCOMPILING)
     # Rules only: no display, no font, no touch. Milliseconds, so it can run first.
     add_executable(board_tests tests/test_boards.c src/boardgames.c)
     target_include_directories(board_tests PRIVATE inc)
+    # Touch calibration maths, also without a device: the fit is fed synthetic samples.
+    add_executable(touch_cal_tests tests/test_touch_cal.c)
+    target_link_libraries(touch_cal_tests PRIVATE terminal_core)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(terminal_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(terminal_demo PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(board_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+        target_compile_options(touch_cal_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
     endif()
     add_test(NAME board_rules COMMAND board_tests)
+    add_test(NAME touch_calibration COMMAND touch_cal_tests)
     add_test(NAME terminal_regression COMMAND terminal_tests)
     set_tests_properties(terminal_regression PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

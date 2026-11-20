@@ -1,0 +1,14 @@
+saved cal-1-step1.png (806, 520)
+saved cal-2-step3.png (806, 520)
+saved cal-3-step5.png (806, 520)
+saved cal-4-result.png (806, 520)
+saved cal-5-login.png (806, 520)
+terminal build 1120f
+calibration point 1 = raw 60,272
+calibration point 2 = raw 740,272
+calibration point 3 = raw 60,440
+calibration point 4 = raw 740,440
+calibration point 5 = raw 400,356
+calibration not saved: cannot write data/touch.cal
+calibration applied: swap=0 X=0..799 Y=0..479 worst=0
+

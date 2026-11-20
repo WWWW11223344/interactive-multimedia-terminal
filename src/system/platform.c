@@ -12,6 +12,13 @@ static HWND g_window;
 static const Image *g_frame;
 static Event g_pending;
 
+/* The preview has no panel to calibrate and no raw axis to report: the pointer is
+   already in screen pixels, so raw and mapped coordinates are the same number. */
+bool platform_is_preview(void) { return true; }
+bool platform_cal_load(TouchCal *cal) { (void)cal; return false; }
+bool platform_cal_save(const TouchCal *cal) { (void)cal; return false; }
+void platform_cal_apply(const TouchCal *cal) { (void)cal; }
+
 /* Paint the application's actual pixels; the preview contains no separate UI implementation. */
 static void paint_window(HDC dc)
 {
@@ -43,6 +50,8 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wParam, LP
         int y = GET_Y_LPARAM(lParam)*480/(client.bottom ? client.bottom : 480);
         if (message == WM_LBUTTONDOWN) { SetCapture(window); }
         if (message == WM_LBUTTONUP) { ReleaseCapture(); }
+        /* The pointer is already in screen pixels, so it is also the raw pair. */
+        app_note_raw(x, y);
         g_pending = (Event){message == WM_LBUTTONDOWN ? EVENT_DOWN :
             message == WM_LBUTTONUP ? EVENT_UP : EVENT_MOVE,x,y};
         return 0;
@@ -127,6 +136,53 @@ static bool g_blocked;
 static int g_slot;
 /* Signed axis corrections, set from --x-bias/--y-bias at startup. */
 static int g_xBias, g_yBias;
+/* Raw range actually in force. These start as the driver's declared range and are
+   replaced by the measured one when data/touch.cal exists. */
+static int g_minX, g_maxX, g_minY, g_maxY;
+/* Written by the calibration wizard; deleting it asks for another pass. */
+#define CAL_FILE "data/touch.cal"
+
+bool platform_is_preview(void) { return false; }
+
+
+/* A record is only trusted if both axes kept a real span; a half-written file or a
+   driver that reports a single value would otherwise freeze the pointer. */
+bool platform_cal_load(TouchCal *cal)
+{
+    FILE *file;
+    int swap = 0, x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+    if (!cal) { return false; }
+    file = fopen(CAL_FILE, "r");
+    if (!file) { return false; }
+    int read = fscanf(file, "%d %d %d %d %d", &swap, &x0, &x1, &y0, &y1);
+    fclose(file);
+    if (read != 5) { return false; }
+    cal->swap = swap != 0;
+    cal->x0 = x0; cal->x1 = x1; cal->y0 = y0; cal->y1 = y1;
+    return touch_cal_valid(cal);
+}
+
+bool platform_cal_save(const TouchCal *cal)
+{
+    FILE *file;
+    if (!touch_cal_valid(cal)) { return false; }
+    file = fopen(CAL_FILE, "w");
+    if (!file) { return false; }
+    fprintf(file, "# 触摸屏实测原始范围，删除本文件即可重新标定\n"
+                  "# swap  x(0..799)  y(0..479)\n"
+                  "%d %d %d %d %d\n",
+        cal->swap == 0 ? 0 : 1, cal->x0, cal->x1, cal->y0, cal->y1);
+    fclose(file);
+    return true;
+}
+
+void platform_cal_apply(const TouchCal *cal)
+{
+    if (!touch_cal_valid(cal)) { return; }
+    g_swap = cal->swap != 0;
+    g_minX = cal->x0; g_maxX = cal->x1;
+    g_minY = cal->y0; g_maxY = cal->y1;
+}
 
 /* Cleanup is safe after any partial initialization failure. */
 void platform_close(void)
@@ -176,6 +232,8 @@ bool platform_open(const char *fbPath, const char *touchPath, bool swapXY, bool 
     }
     g_rawX = g_axisX.value; g_rawY = g_axisY.value;
     g_seenX = true; g_seenY = true;
+    g_minX = g_axisX.minimum; g_maxX = g_axisX.maximum;
+    g_minY = g_axisY.minimum; g_maxY = g_axisY.maximum;
     fprintf(stderr,"LCD 800x480/%u, stride=%u; touch X=%d..%d Y=%d..%d\n",
         g_var.bits_per_pixel,g_fix.line_length,g_axisX.minimum,g_axisX.maximum,g_axisY.minimum,g_axisY.maximum);
     return true;
@@ -183,13 +241,11 @@ failed:
     perror("Device initialization"); platform_close(); return false;
 }
 
-/* Normalize from the kernel-reported axis range, then clamp to visible coordinates. */
-static int scale_axis(int raw, struct input_absinfo axis, int size)
+/* Normalize from the range in force - the driver's, or the measured one - and clamp
+   to visible coordinates. */
+static int scale_axis(int raw, int lo, int hi, int size)
 {
-    int64_t scaled = ((int64_t)raw-axis.minimum)*(size-1)/((int64_t)axis.maximum-axis.minimum);
-    if (scaled < 0) { scaled = 0; }
-    if (scaled >= size) { scaled = size-1; }
-    return (int)scaled;
+    return touch_cal_map(raw, lo, hi, size);
 }
 
 /* Emit coherent SYN_REPORT samples. A dropped report cancels the current gesture. */
@@ -227,14 +283,23 @@ int platform_poll(Event *event, int timeoutMs)
             g_down = !g_blocked && input.value >= 0;
         }
         if (input.type == EV_SYN && input.code == SYN_REPORT && g_seenX && g_seenY) {
-            int x = scale_axis(g_swap ? g_rawY : g_rawX,g_swap ? g_axisY : g_axisX,800);
-            int y = scale_axis(g_swap ? g_rawX : g_rawY,g_swap ? g_axisX : g_axisY,480);
+            /* With a swapped panel the raw Y channel carries the horizontal axis, so
+               the measured ranges travel with the channel, not with the name. */
+            int horizontal = g_swap ? g_rawY : g_rawX;
+            int vertical = g_swap ? g_rawX : g_rawY;
+            int horizontalLow = g_swap ? g_minY : g_minX;
+            int horizontalHigh = g_swap ? g_maxY : g_maxX;
+            int verticalLow = g_swap ? g_minX : g_minY;
+            int verticalHigh = g_swap ? g_maxX : g_maxY;
+            int x = scale_axis(horizontal,horizontalLow,horizontalHigh,800);
+            int y = scale_axis(vertical,verticalLow,verticalHigh,480);
             if (g_invertX) { x = 799-x; } if (g_invertY) { y = 479-y; }
             /* Signed panel correction from --x-bias/--y-bias, applied after any mirroring. */
             x += g_xBias; y += g_yBias;
             if (x < 0) { x = 0; } if (x > 799) { x = 799; }
             if (y < 0) { y = 0; } if (y > 479) { y = 479; }
             event->x = x; event->y = y;
+            app_note_raw(g_rawX, g_rawY);
             event->type = g_down ? (g_reported ? EVENT_MOVE : EVENT_DOWN) :
                 g_reported ? EVENT_UP : EVENT_NONE;
             g_reported = g_down;

@@ -40,6 +40,13 @@ def verify(upstream=False, artifacts=False, deliverables=False):
     for path in (ROOT / "src/boardgames.c", ROOT / "inc/boardgames.h"):
         includes = re.findall(r'#\s*include\s*"([^"]+)"', path.read_text(encoding="utf-8"))
         check(all(item == "boardgames.h" for item in includes), f"Rule depends on UI: {path}")
+    # 标定只做整数算术，必须能在没有屏幕、没有字库、没有触摸设备的宿主机上单独跑。
+    headers = re.findall(r'#\s*include\s*"([^"]+)"',
+                         (ROOT / "src/system/touch_cal.c").read_text(encoding="utf-8"))
+    check(all(item == "touchcal.h" for item in headers), "Calibration maths includes more than its own header")
+    headers = re.findall(r'#\s*include\s*"([^"]+)"',
+                         (ROOT / "inc/touchcal.h").read_text(encoding="utf-8"))
+    check(all(item == "display.h" for item in headers), "Calibration header depends on a device layer")
     for name in ("MusicSystem.c", "VideoSystem.c", "LoginAndRegisterSystem.c"):
         check(not (ROOT / "src" / name).exists(), f"Removed feature remains: {name}")
     check((ROOT / "res/simfang.ttf").stat().st_size > 10000, "Missing font")

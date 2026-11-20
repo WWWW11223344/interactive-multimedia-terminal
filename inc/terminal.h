@@ -7,12 +7,15 @@
 #include <time.h>
 /* Shown on the login screen and printed at startup: a photo of the screen or one line
    of console output then settles "is this the build I just copied?" without guessing. */
-#define APP_BUILD "1120e"
+#define APP_BUILD "1120f"
 #define ALBUM_LIMIT 128
 #define PATH_CAPACITY 512
 typedef enum { PAGE_LOGIN, PAGE_REGISTER, PAGE_HOME, PAGE_ALBUM, PAGE_PHOTO,
                PAGE_GAMES, PAGE_2048, PAGE_GOMOKU, PAGE_TOE, PAGE_CHESS, PAGE_BOARD } Page;
 typedef enum { EVENT_NONE, EVENT_DOWN, EVENT_MOVE, EVENT_UP, EVENT_CANCEL, EVENT_QUIT } EventType;
+/* Screen coordinates only. The raw panel value behind them is asked for separately
+   through platform_last_raw(), so every place that builds a synthetic event for a
+   test or a tool keeps working with three numbers. */
 typedef struct { EventType type; int x, y; } Event;
 /* Numeric credentials only (6 digits), matching the upstream GEC6818 demos. */
 typedef struct {
@@ -41,8 +44,9 @@ typedef struct {
     bool running, dirty, pressed, painting;
     int downX, downY, lastX, lastY, radius, color;
     /* Last release point, kept for the on-screen coordinate readout that turns a
-       "button does not respond" report into a number. */
-    int tapX, tapY;
+       "button does not respond" report into a number. rawX/rawY are that same
+       release before the range mapping. */
+    int tapX, tapY, rawX, rawY;
     /* Last sample taken while the finger was down. Xie Donghong's projects act on any
        sample seen between press and release, so a hit may be reported at the press
        point, the release point, or anywhere in between; this keeps that middle sample
@@ -64,6 +68,11 @@ typedef struct {
 bool app_open(App *app, const char *saveDir);
 void app_close(App *app);
 void app_event(App *app, Event event);
+/* Raw panel values behind the most recent sample, before range mapping. The device
+   layer records them, the screens that show them read them; they live in the core so
+   a test or a screenshot tool can drive the screens without linking the device layer. */
+void app_note_raw(int rawX, int rawY);
+void app_last_raw(int *rawX, int *rawY);
 void app_render(App *app);
 void app_tick(App *app);
 bool album_scan(App *app);

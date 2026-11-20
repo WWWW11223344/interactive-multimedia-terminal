@@ -3,6 +3,8 @@
 /dist/
 /data/drawings/*.bmp
 /data/test-*/
+# 板上实测的触摸范围，随机器不同，不进版本库
+/data/touch.cal
 __pycache__/
 *.o
 *.d

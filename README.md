@@ -61,6 +61,8 @@ chmod +x bin/terminal run.sh
 
 `event0` 是默认值，须在板上用 `/proc/bus/input/devices` 核对实际触屏节点。方向不对时可组合 `--swap-xy`、`--invert-x`、`--invert-y`，详见 [部署与验收](docs/部署与验收.md)。提供的 ARM 文件是 ARMv7-A、soft-float EABI、静态 musl，仍须以开发板运行结果为准。
 
+首次运行时 `data/touch.cal` 不存在，程序先进入五点标定页：按屏幕上的五个十字各点一下，实测的轴范围会存进该文件，之后启动直接生效。屏幕某一段点不动、某几个键怎么点都没反应时，先跑这一页；删除 `data/touch.cal` 可重新标定，`--calibrate` 强制重来，`--no-calibrate` 跳过整页。
+
 重新构建可使用板卡 SDK 的 GCC：
 
 ```sh

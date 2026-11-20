@@ -1,0 +1,85 @@
+terminal build 1120f
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=0
+ok   key 0 types '1'
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=0
+ok   key 1 types '2'
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=0
+ok   key 2 types '3'
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=0
+ok   key 3 types '4'
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=0
+ok   key 4 types '5'
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=0
+ok   key 5 types '6'
+tap down=484,356 mid=484,356 up=484,356 raw=0,0 page=0
+ok   key 6 types '7'
+tap down=596,356 mid=596,356 up=596,356 raw=0,0 page=0
+ok   key 7 types '8'
+tap down=708,356 mid=708,356 up=708,356 raw=0,0 page=0
+ok   key 8 types '9'
+tap down=596,424 mid=596,424 up=596,424 raw=0,0 page=0
+ok   key 10 (0) types '0'
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=0
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=0
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=0
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=0
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=0
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=0
+ok   six digits fill 账号 and advance to 密码
+tap down=484,356 mid=484,356 up=484,356 raw=0,0 page=0
+tap down=596,356 mid=596,356 up=596,356 raw=0,0 page=0
+tap down=708,356 mid=708,356 up=708,356 raw=0,0 page=0
+ok   the next digits go into 密码
+tap down=484,424 mid=484,424 up=484,424 raw=0,0 page=0
+ok   删除 removes the last digit
+tap down=596,424 mid=596,424 up=596,424 raw=0,0 page=0
+ok   0 is accepted after 删除
+tap down=484,424 mid=484,424 up=484,424 raw=0,0 page=0
+ok   删除 on an empty field steps back to 账号
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=0
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=0
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=0
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=0
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=0
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=0
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=0
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=0
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=0
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=0
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=0
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=0
+ok   both fields hold 123456
+tap down=708,424 mid=708,424 up=708,424 raw=0,0 page=0
+ok   确认 on the demo account logs in
+tap down=596,314 mid=596,314 up=596,314 raw=0,0 page=0
+ok   key 5 still fires with the point 26px low
+tap down=596,262 mid=596,262 up=596,262 raw=0,0 page=0
+ok   key 5 still fires with the point 26px high
+tap down=220,280 mid=220,280 up=220,280 raw=0,0 page=0
+ok   the 登录 button starts the same animation
+tap down=220,352 mid=220,352 up=220,352 raw=0,0 page=0
+ok   注册 opens the register screen
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=1
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=1
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=1
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=1
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=1
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=1
+ok   账号 filled first on 注册
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=1
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=1
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=1
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=1
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=1
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=1
+ok   密码 filled second on 注册
+tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=1
+tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=1
+tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=1
+tap down=484,288 mid=484,288 up=484,288 raw=0,0 page=1
+tap down=596,288 mid=596,288 up=596,288 raw=0,0 page=1
+tap down=708,288 mid=708,288 up=708,288 raw=0,0 page=1
+ok   确认 takes the last six digits
+tap down=86,46 mid=86,46 up=86,46 raw=0,0 page=1
+ok   header 返回 leaves the register screen
+all checks passed

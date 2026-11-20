@@ -84,12 +84,15 @@ static void draw_keypad(App *app)
 }
 
 /* Last gesture, shown on screen so a calibration problem is visible instead of
-   guessed: the press point and the release point are printed side by side. */
+   guessed: the press point, the release point and the raw value behind them are
+   printed side by side. A tap that reacts in the wrong place and a tap that reacts
+   nowhere look identical from the outside; these six numbers tell them apart. */
 static void draw_tap_readout(App *app, int x, int y)
 {
-    char line[80];
-    snprintf(line, sizeof(line), "down %d,%d   up %d,%d", app->downX, app->downY, app->tapX, app->tapY);
-    draw_text(&app->screen, x, y, 14, 0x8C9A94, line);
+    char line[96];
+    snprintf(line, sizeof(line), "down %d,%d  up %d,%d  raw %d,%d",
+        app->downX, app->downY, app->tapX, app->tapY, app->rawX, app->rawY);
+    draw_text(&app->screen, x, y, 13, 0x8C9A94, line);
 }
 
 /* Feedback strip in the left column: which field is live, how many digits are in,
@@ -112,22 +115,30 @@ static void draw_status(App *app, Rect rect, const char *fieldName, const char *
     }
 }
 
-/* Exact rectangle first; if nothing matches, take the nearest key centre within
-   a small radius. Both the release point and the press point are tried, because
-   the panel does not always report them at the same place. */
+/* The keypad block is fully tiled: an exact rectangle first, then the nearest key
+   centre for any point inside the block itself. A finger that lands in the 8 px gutter,
+   or a little high on the top row, still presses what it aimed at - which is the
+   difference between "1 does not respond" and "1 responded". Outside the block the
+   functions return -1, so the buttons in the left column keep their own area. */
+#define PAD_LEFT (KEY_X0 - 8)
+#define PAD_RIGHT (KEY_X0 + 2 * KEY_STEP + KEY_W + 8)
+#define PAD_TOP (KEY_Y0 - 8)
+#define PAD_BOTTOM (KEY_Y0 + 3 * KEY_ROW_STEP + KEY_H + 8)
+
 static int hit_point(int x, int y)
 {
+    int best = -1;
+    int64_t bestDistance = 0;
     for (int i = 0; i < 12; ++i) {
         if (rect_has(key_rect(i), x, y)) { return i; }
     }
-    int best = -1;
-    int64_t bestDistance = 40LL * 40LL;
+    if (x < PAD_LEFT || x > PAD_RIGHT || y < PAD_TOP || y > PAD_BOTTOM) { return -1; }
     for (int i = 0; i < 12; ++i) {
         Rect rect = key_rect(i);
         int64_t dx = x - (rect.x + rect.w / 2);
         int64_t dy = y - (rect.y + rect.h / 2);
         int64_t distance = dx * dx + dy * dy;
-        if (distance < bestDistance) { bestDistance = distance; best = i; }
+        if (best < 0 || distance < bestDistance) { bestDistance = distance; best = i; }
     }
     return best;
 }

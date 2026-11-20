@@ -18,7 +18,8 @@ try {
         "src/GomokuSystem.c", "src/ToeSystem.c", "src/ChessSystem.c", "src/boardgames.c",
         "src/LoginSystem.c", "src/game.c",
         "src/system/lcd.c",
-        "src/system/file_manager.c", "src/system/print.c", "src/system/platform.c"
+        "src/system/file_manager.c", "src/system/print.c",
+        "src/system/touch_cal.c", "src/system/calibrate.c", "src/system/platform.c"
     )
     # ARMv7-A soft-float EABI runs in the GEC6818's 32-bit Linux environment.
     # musl is linked statically, avoiding a dependency on the board's glibc version.

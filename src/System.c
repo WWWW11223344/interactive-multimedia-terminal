@@ -10,6 +10,12 @@
 #endif
 const uint32_t UI_INK = 0x203B3C, UI_MUTED = 0x657878, UI_BG = 0xF5F2EB, UI_TEAL = 0x227C77;
 
+/* The panel pair behind the newest sample. Written once per SYN_REPORT by the device
+   layer, read when a screen wants to show where a tap really came from. */
+static int g_lastRawX, g_lastRawY;
+void app_note_raw(int rawX, int rawY) { g_lastRawX = rawX; g_lastRawY = rawY; }
+void app_last_raw(int *rawX, int *rawY) { *rawX = g_lastRawX; *rawY = g_lastRawY; }
+
 /* Require a writable-directory location; permission errors surface at save time. */
 static bool create_directory(const char *path)
 {
@@ -224,11 +230,14 @@ void app_event(App *app, Event event)
     if (event.type == EVENT_MOVE) { app->lastSampleX = event.x; app->lastSampleY = event.y; }
     if (event.type == EVENT_UP) {
         app->tapX = event.x; app->tapY = event.y;
-        /* One line per tap on the console: the three points the hit test actually uses.
-           A "the button does nothing" report becomes a measurement when the press, the
-           middle sample and the release can be compared side by side. */
-        fprintf(stderr, "tap down=%d,%d mid=%d,%d up=%d,%d page=%d\n",
-            app->downX, app->downY, app->lastSampleX, app->lastSampleY, event.x, event.y, (int)app->page);
+        app_last_raw(&app->rawX, &app->rawY);
+        /* One line per tap on the console: the three points the hit test actually uses
+           and the raw panel value behind them. A "the button does nothing" report
+           becomes a measurement when the press, the middle sample and the release can
+           be compared side by side, and the raw pair says whether the range is wrong. */
+        fprintf(stderr, "tap down=%d,%d mid=%d,%d up=%d,%d raw=%d,%d page=%d\n",
+            app->downX, app->downY, app->lastSampleX, app->lastSampleY, event.x, event.y,
+            app->rawX, app->rawY, (int)app->page);
     }
     if (!app->pressed) { return; }
     /* The register screen goes back to login, not to the home screen. */
