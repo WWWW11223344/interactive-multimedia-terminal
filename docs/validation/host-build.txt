@@ -3,7 +3,7 @@ COMMAND: cmake --build build-host -j 4
 [ 17%] Built target board_tests
 [ 75%] Built target terminal_core
 [ 82%] Built target terminal_tests
+[ 92%] Built target terminal
 [100%] Built target terminal_demo
-[100%] Built target terminal
 
 EXIT CODE: 0
