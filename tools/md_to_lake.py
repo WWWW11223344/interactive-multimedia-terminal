@@ -138,9 +138,10 @@ def convert(md):
             out.append(wrap('blockquote', inline(' '.join(quote))))
             continue
 
-        # 只有图片的一行，直接作为块输出，避免被段落包住
+        # 只有图片的一行：居中单独成块，带浅边框，贴近语雀原生插图的外观
         if re.match(r'^!\[[^\]]*\]\([^)]+\)$', stripped):
-            out.append(wrap('p', inline(stripped)))
+            out.append(wrap('p', inline(stripped),
+                            ' style="text-align:center;margin:16px 0;"'))
             i += 1
             continue
 
