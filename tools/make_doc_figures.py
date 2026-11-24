@@ -245,12 +245,12 @@ def fig_sw():
     im = canvas(W, H)
     d = drawer(im)
     layers = [
-        (78, "应用层", "登录注册 · 主界面 · 电子相册 · 2048 · 创意画板",
-         "LoginSystem.c / AlbumSystem.c / GameSystem.c / WhiteboardSystem.c"),
-        (200, "框架层", "App 状态、页面调度、命中判定、增量刷新",
-         "System.c + terminal.h（Page / Event / ui_nearest）"),
-        (322, "规则层", "2048 棋盘压缩、合并、计分、胜负判断",
-         "game.c + game.h，不引用界面与设备"),
+        (78, "应用层", "登录注册 · 主界面 · 电子相册 · 四款小游戏 · 创意画板",
+         "LoginSystem.c / AlbumSystem.c / GameSystem.c / GomokuSystem.c / ToeSystem.c / ChessSystem.c"),
+        (200, "框架层", "App 状态、页面调度、命中判定、增量刷新、运行日志",
+         "System.c + terminal.h（Page / Event / ui_nearest）+ logger.c"),
+        (322, "规则层", "2048 压缩合并 · 五子棋评分 · 井字棋搜索 · 象棋走子",
+         "game.c + boardgames.c，不引用界面与设备"),
         (444, "基础层", "矩形、圆、线段、图像缩放、BMP 读写、文字",
          "display.h → lcd.c / file_manager.c / print.c"),
         (566, "设备层", "framebuffer 提交、evdev 读取、坐标归一化",
@@ -264,7 +264,15 @@ def fig_sw():
         d.rounded_rectangle([(left * S), ((y - bh / 2) * S), ((left + 13) * S), ((y + bh / 2) * S)],
                             radius=5 * S, fill=TEAL)
         text_c(d, cx, y - 14, sub, 21, INK, True)
-        text_c(d, cx, y + 22, files, 15, MUTED)
+        # 按实际像素宽度自适应字号，保证文件清单不越出卡片左右边界
+        max_w = (bw - 36) * S
+        file_size = 15
+        while file_size > 9:
+            bb = d.textbbox((0, 0), files, font=fnt(file_size))
+            if bb[2] - bb[0] <= max_w:
+                break
+            file_size -= 1
+        text_c(d, cx, y + 22, files, file_size, MUTED)
         text_c(d, 84, y, name, 21, TEAL, True)
 
     for y in (78, 200, 322, 444):
