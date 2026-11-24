@@ -1,6 +1,6 @@
 COMMAND: G:\io\multimedia-terminal\build-host\terminal_tests.exe
-terminal build 1120f
-terminal build 1120f
+terminal build 1120i
+terminal build 1120i
 tap down=484,220 mid=484,220 up=484,220 raw=0,0 page=0
 tap down=596,220 mid=596,220 up=596,220 raw=0,0 page=0
 tap down=708,220 mid=708,220 up=708,220 raw=0,0 page=0

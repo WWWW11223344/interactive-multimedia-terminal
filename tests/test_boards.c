@@ -1,6 +1,6 @@
-/* Board game rules, 2026-11-20. Links boardgames.c only: no framebuffer, no font,
- * no touch device, no App. Runs in milliseconds, so a broken horse-leg or elephant-eye
- * rule is caught on the desktop instead of on the panel.
+/* 棋盘游戏规则，2026-11-20。只链接 boardgames.c：无 framebuffer、无字体、
+ * 无触摸设备、无 App。以毫秒级运行，因此蹩马腿或塞象眼之类的规则错误
+ * 会在宿主机上被捕获，而不是等到开发板上才发现。
  *
  * 五子棋 / 井字棋 / 中国象棋共用一个测试程序：三者都在 boardgames.c 里，任何一处回归
  * 都能在宿主机上先暴露。棋盘用 row * 列数 + col 的扁平下标，at() 让测试看起来像棋谱。 */
@@ -11,8 +11,8 @@
 
 static int at(int row, int col) { return row * GOMOKU_N + col; }
 
-/* Alternating play: a five-in-a-row test only means something if the opponent moves
- * too, otherwise every stone placed would belong to the same side. */
+/* 交替落子：只有当对手也落子时，五连测试才有意义，
+ * 否则每颗棋子都会属于同一方。 */
 static void pair(Gomoku *game, int mine, int theirs)
 {
     assert(gomoku_place(game, mine));

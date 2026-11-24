@@ -33,7 +33,7 @@ def architecture(font):
     img = Image.new("RGB", (1600, 1120), "#f3f6fa")
     draw = ImageDraw.Draw(img)
     sizes = {size: ImageFont.truetype(font, size) for size in (25, 28, 32, 38, 48)}
-    draw.text((70, 40), "触控休闲娱乐终端 · 软件结构", font=sizes[48], fill="#18354c")
+    draw.text((70, 40), "交互式多媒体终端 · 软件结构", font=sizes[48], fill="#18354c")
     draw.text((70, 106), "GEC6818 / 800×480  |  C99  |  单线程事件循环", font=sizes[28], fill="#52697a")
 
     def box(rect, title, lines, fill="white"):
@@ -66,15 +66,23 @@ def architecture(font):
 
 
 def screenshots(font):
-    label_font = ImageFont.truetype(font, 18)
+    """Badge goes in a strip below the frame, never on top of it.
+
+    The corners of these pages are all occupied (return button top-left, page
+    counter top-right, action buttons bottom-right), so an overlay badge would
+    always cover real UI. A strip cannot.
+    """
+    label_font = ImageFont.truetype(font, 17)
+    text = "桌面模拟（Windows 预览，非实机）"
     for path in sorted((DOCS / "screenshots").glob("*.bmp")):
         with Image.open(path) as source:
-            img = source.convert("RGB")
+            frame = source.convert("RGB")
+        strip = 28
+        img = Image.new("RGB", (frame.width, frame.height + strip), "#f4e3b8")
+        img.paste(frame, (0, 0))
         draw = ImageDraw.Draw(img)
-        text = "桌面模拟"
-        width = int(draw.textlength(text, font=label_font)) + 22
-        draw.rectangle((img.width - width, 0, img.width, 27), fill="#f4e3b8")
-        draw.text((img.width - width + 11, 3), text, font=label_font, fill="#5a4213")
+        width = int(draw.textlength(text, font=label_font)) + 24
+        draw.text((img.width - width + 12, frame.height + 5), text, font=label_font, fill="#5a4213")
         img.save(path.with_suffix(".png"))
 
 
@@ -110,7 +118,7 @@ def report():
         set_font(document.styles[name], "Calibri", "黑体", size)
         document.styles[name].font.color.rgb = RGBColor.from_string("183F55")
     header = sec.header.paragraphs[0]
-    header.text = "触控休闲娱乐终端 · 课程项目书"
+    header.text = "交互式多媒体终端 · 课程项目书"
     header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     header.style.font.size = Pt(9)
     footer = sec.footer.paragraphs[0]
@@ -178,7 +186,7 @@ def report():
             p = document.add_paragraph()
             inline(p, line)
         n += 1
-    document.core_properties.title = "基于嵌入式 Linux 的触控休闲娱乐终端设计与实现"
+    document.core_properties.title = "基于嵌入式 Linux 的交互式多媒体终端设计与实现"
     document.core_properties.subject = "课程项目书；截图为桌面模拟；实机待验收"
     document.core_properties.author = ""  # Student fills in actual identity.
     document.save(DOCS / "项目书.docx")

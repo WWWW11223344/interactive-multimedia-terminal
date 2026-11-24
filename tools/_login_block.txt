@@ -25,7 +25,7 @@ static void render_login(App *app)
     /* Hero band: title, one-line hint, and the two fields sit on it. */
     draw_rect(&app->screen, (Rect){0, 0, 800, 188}, UI_TEAL);
     draw_rect(&app->screen, (Rect){0, 188, 800, 4}, 0x1A5F5B);
-    draw_text(&app->screen, 40, 20, 34, 0xFFFFFF, "触控休闲娱乐终端");
+    draw_text(&app->screen, 40, 20, 34, 0xFFFFFF, "交互式多媒体终端");
     draw_text(&app->screen, 40, 64, 15, 0xBAD9D5, "点右侧数字键输入，满 6 位自动跳下一格");
 
     draw_field(app, (Rect){40, 100, 356, 58}, "账号", login->user, login->field == 0, false, true);

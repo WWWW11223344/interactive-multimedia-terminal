@@ -11,7 +11,10 @@ add_library(terminal_core STATIC
     src/GameSystem.c src/GamesMenuSystem.c src/GomokuSystem.c src/ToeSystem.c
     src/ChessSystem.c src/boardgames.c src/LoginSystem.c src/game.c
     src/system/touch_cal.c
-    src/system/lcd.c src/system/file_manager.c src/system/print.c)
+    src/system/touch_probe.c
+    src/system/touch_sweep.c
+    src/system/lcd.c src/system/file_manager.c src/system/print.c
+    src/system/logger.c)
 target_include_directories(terminal_core PUBLIC inc PRIVATE inc/system)
 target_link_libraries(terminal_core PUBLIC upstream_font m)
 add_executable(terminal src/main.c src/system/platform.c src/system/calibrate.c)
@@ -40,14 +43,28 @@ if(TERMINAL_TESTS AND NOT CMAKE_CROSSCOMPILING)
     # Touch calibration maths, also without a device: the fit is fed synthetic samples.
     add_executable(touch_cal_tests tests/test_touch_cal.c)
     target_link_libraries(touch_cal_tests PRIVATE terminal_core)
+    # Login state machine: keypad hits, auto-advance, the two failure paths, and the
+    # demo account. Runs headless and needs data/accounts.txt, so it takes the source
+    # directory as its working directory.
+    add_executable(login_flow_tests tests/test_login_flow.c)
+    target_link_libraries(login_flow_tests PRIVATE terminal_core)
+    # Logger is pure C file I/O: level filtering, disk output and size rotation.
+    add_executable(logger_tests tests/test_logger.c)
+    target_link_libraries(logger_tests PRIVATE terminal_core)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(terminal_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(terminal_demo PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(board_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
         target_compile_options(touch_cal_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+        target_compile_options(login_flow_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+        target_compile_options(logger_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
     endif()
     add_test(NAME board_rules COMMAND board_tests)
     add_test(NAME touch_calibration COMMAND touch_cal_tests)
     add_test(NAME terminal_regression COMMAND terminal_tests)
+    add_test(NAME login_flow COMMAND login_flow_tests)
+    add_test(NAME logger COMMAND logger_tests)
     set_tests_properties(terminal_regression PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(login_flow PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(logger PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

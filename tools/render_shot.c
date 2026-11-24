@@ -1,5 +1,5 @@
-/* Off-screen renderer used to check layout work without the board.
- * Builds the real App, paints each page into app.screen, writes BMP files.
+/* 离屏渲染器，用于在没有开发板的情况下检查布局。
+ * 构建真实的 App，把每一页绘制到 app.screen，并写出 BMP 文件。
  * Codex, 2026-11-19. */
 #include "terminal.h"
 #include <stdio.h>
@@ -31,8 +31,9 @@ int main(void)
         fprintf(stderr, "app_open failed\n");
         return 1;
     }
-    shot(&app, PAGE_LOGIN, 0, "123", "", "", "login_empty");
-    shot(&app, PAGE_LOGIN, 1, "123456", "", "", "login_typing");
+    /* 与演示账号相同的数字，这样图片和它下面的提示保持一致。 */
+    shot(&app, PAGE_LOGIN, 0, "678", "", "", "login_empty");
+    shot(&app, PAGE_LOGIN, 1, "678678", "", "", "login_typing");
     shot(&app, PAGE_REGISTER, 1, "654321", "1234", "", "register");
     shot(&app, PAGE_HOME, 0, "", "", "", "home");
     shot(&app, PAGE_GAMES, 0, "", "", "", "games");
@@ -58,8 +59,8 @@ int main(void)
     shot(&app, PAGE_CHESS, 0, "", "", "", "chess");
     if (album_scan(&app)) {
         shot(&app, PAGE_ALBUM, 0, "", "", "", "album");
-        /* Tap the first thumbnail through the real event path, so the shot proves the
-           hit test as well as the layout (this is the "top row cannot be opened" case). */
+        /* 通过真实事件路径点击第一张缩略图，这样截图既验证了命中测试，也验证了布局
+           （这就是「顶行无法打开」的情况）。 */
         app_event(&app, (Event){EVENT_DOWN, 150, 160});
         app_event(&app, (Event){EVENT_UP, 150, 160});
         fprintf(stderr, "album tap -> page %d, selected %zu\n", (int)app.page, app.album.selected);

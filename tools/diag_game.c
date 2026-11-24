@@ -1,4 +1,4 @@
-/* Temporary diagnostic: what does a tap on the 2048 left key actually do?
+/* 临时诊断：点击 2048 的左键到底会发生什么？
  * Codex, 2026-11-19. */
 #include "terminal.h"
 #include <stdio.h>
@@ -34,7 +34,7 @@ int main(void)
     app_event(&app, (Event){EVENT_UP, 469, 222});
     dump("after tap", &app);
 
-    /* Same tap, but evaluated through ui_clicked directly. */
+    /* 同样的点击，但直接通过 ui_clicked 求值。 */
     fprintf(stderr, "rect_has(left,%d,%d)=%d\n", 469, 222, rect_has((Rect){430,196,78,52}, 469, 222));
     app_close(&app);
     return 0;

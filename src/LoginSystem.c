@@ -1,32 +1,83 @@
-/* Login and registration screens with a numeric keypad, plus a success animation.
- * Added 2026-11-19 for the GEC6818 demo. Accounts live in data/accounts.txt,
- * one "user pass" pair per line, matching the numeric-only flow of the two
- * upstream projects (Xiao Linxiang register.c / Xie Donghong LoginAndRegisterSystem.c).
- */
+/******************************************************************************
+Copyright (c), 2026, 汪贤云
+File name:   LoginSystem.c
+Author:      汪贤云        Version: 1.0.0       Date: 2026-11-20
+Description: 登录与注册页。账号密码均为 6 位数字，靠右侧 3x4 数字键盘输入，输满
+             自动跳到下一格；文本框只显示不直接编辑。这块面板的顶部一行按键失灵，
+             数字只能用 4~9（以及 0），所以演示账号取 678678 / 678678；若用 123456
+             则根本输不出来。账号存放在 data/accounts.txt，每行一条「账号 密码」，
+             启动时若演示账号不存在就以追加方式写入，用户注册的账号一律保留。
+Others:      键盘命中先做精确矩形判定，再在键盘区内吸附到最近键心，容忍 8 像素的
+             间隙与首行偏高的点击；页面还会显示按下点、抬起点与触摸原始值，把校准
+             问题从主观描述变成可对比的数字。界面文案与演示账号均保持原样。
+Function List:
+  1. key_rect         计算第 index 个按键的矩形区域
+  2. draw_field       绘制输入框，左侧标签右侧数值，兼容两种底色
+  3. draw_keypad      绘制整个数字键盘
+  4. draw_tap_readout 显示最近一次手势的按下点、抬起点与原始值
+  5. draw_tap_mark    在抬起点画十字，标出映射结果
+  6. draw_status      绘制状态条：已输入位数或错误信息
+  7. hit_point        把屏幕坐标换算成按键下标，带边缘吸附
+  8. hit_key          按键命中：先抬起点，再退回按下点
+  9. account_exists   判断账号是否已存在于账号文件
+ 10. credential_ok    校验账号密码是否匹配账号文件
+ 11. account_append   把一组账号密码追加到账号文件
+ 12. login_init       首次启动时创建演示账号
+ 13. active_buffer    按当前焦点返回正在编辑的输入缓冲
+ 14. press_key        处理数字键与删除键输入
+ 15. do_login         执行登录校验并启动成功动画
+ 16. do_register      执行注册并返回登录页
+ 17. draw_column_rule 绘制左右两栏之间的分隔线
+ 18. draw_warning     未命中时显示坐标提示
+ 19. render_login     绘制登录页
+ 20. render_register  绘制注册页
+ 21. render_fx        绘制登录成功动画
+ 22. login_render     登录、注册与动画的绘制入口
+ 23. login_event      登录与注册页的事件处理
+ 24. login_fx_tick    逐帧推进成功动画，结束后跳转主界面
+History:
+  1. Date: 2026-11-20   Author: 汪贤云
+     Modification: 初版；注释按华为编程规范改为中文
+******************************************************************************/
 #include "terminal.h"
+#include "logger.h"
 #include <stdio.h>
 #include <string.h>
 
+/* 账号与密码的最大位数，输入满即自动跳格 */
 #define MAX_DIGITS 6
+/* 账号文件路径，每行一条「账号 密码」 */
 #define ACCOUNT_FILE "data/accounts.txt"
+/* 登录成功动画的最后一帧，播完跳到主界面 */
 #define FX_LAST_FRAME 58
 
-/* Keypad legend: 1-9, delete, 0, confirm. */
+/* 演示账号必须能在顶部按键失灵的面板上输入，只能用位于其下方的 6、7、8。
+   123456 看似是演示账号的常规选择，却恰恰是这块板上输不出来的，故取 678678。 */
+#define DEMO_USER "678678"
+#define DEMO_PASS "678678"
+
+/* 键盘标签：1 至 9、删除、0、确认 */
 static const char *const g_pad[12] = {
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "删除", "0", "确认"
 };
 
-/* Keypad geometry: the classic 3x4 phone pad (1-9, delete, 0, confirm) on the right
-   side of the screen, leaving a column for the fields, the status strip and the
-   actions. Keys are 104x60 with an 8px gutter; the block's right edge lands on 760
-   so it lines up with the password box above it. */
+/* 键盘几何：经典的 3x4 电话键盘（1 至 9、删除、0、确认）位于屏幕右侧，左侧留出
+   输入框、状态条与操作按钮。按键 104x60，间距 8 像素；键盘右边缘落在 760，
+   与上方密码框对齐。 */
+/* 按键宽度 */
 #define KEY_W 104
+/* 按键高度 */
 #define KEY_H 60
+/* 键盘左上角横坐标 */
 #define KEY_X0 432
+/* 横向步进，等于键宽加间距 */
 #define KEY_STEP 112
+/* 键盘左上角纵坐标 */
 #define KEY_Y0 190
+/* 纵向步进，等于键高加间距 */
 #define KEY_ROW_STEP 68
 
+/* 计算第 index 个按键的矩形区域，按 3 列 4 行排布 */
 static Rect key_rect(int index)
 {
     Rect rect;
@@ -37,9 +88,8 @@ static Rect key_rect(int index)
     return rect;
 }
 
-/* Label on the left, value on the right. On the teal header band the field is a
-   plain white plate with a teal underline when focused; on the beige pages it keeps
-   a hairline frame. Same code, two surfaces, so the two screens stay related. */
+/* 绘制输入框：左侧标签、右侧数值。在青色页头上表现为白底加聚焦时的青色下划线，
+   在米色页面上则保留细边框；同一段代码画两种外观，让两页保持关联。 */
 static void draw_field(App *app, Rect rect, const char *label, const char *value,
                        bool active, bool masked, bool onTeal)
 {
@@ -66,27 +116,26 @@ static void draw_field(App *app, Rect rect, const char *label, const char *value
     draw_text(&app->screen, rect.x + 76, rect.y + (rect.h - 26) / 2, 26, UI_INK, shown);
 }
 
+/* 绘制整个数字键盘 */
 static void draw_keypad(App *app)
 {
     for (int i = 0; i < 12; ++i) {
         Rect full = key_rect(i);
         if (i == 9) {
-            /* 删除 is a quiet action: same shape as a digit, muted fill. */
+            /* 删除是次要操作：形状与数字键相同，填充色更淡。 */
             draw_rect(&app->screen, full, 0xE6E0D3);
             int width = text_width(g_pad[i], 22);
             draw_text(&app->screen, full.x + (full.w - width) / 2,
                 full.y + (full.h - 22) / 2 + 1, 22, UI_MUTED, g_pad[i]);
         } else {
-            /* 确认 is the primary action; digits are the biggest glyphs on screen. */
+            /* 确认是主要操作；数字是屏幕上字号最大的字形。 */
             ui_button_style(app, full, g_pad[i], i == 11 ? 1 : 2, i == 11 ? 24 : 28);
         }
     }
 }
 
-/* Last gesture, shown on screen so a calibration problem is visible instead of
-   guessed: the press point, the release point and the raw value behind them are
-   printed side by side. A tap that reacts in the wrong place and a tap that reacts
-   nowhere look identical from the outside; these six numbers tell them apart. */
+/* 显示最近一次手势：按下点、抬起点以及对应的原始值并排打印，让校准问题可见而
+   不必猜测。按错位置和完全没反应从外部看是一样的，这六个数字能把两者区分开。 */
 static void draw_tap_readout(App *app, int x, int y)
 {
     char line[96];
@@ -95,8 +144,18 @@ static void draw_tap_readout(App *app, int x, int y)
     draw_text(&app->screen, x, y, 13, 0x8C9A94, line);
 }
 
-/* Feedback strip in the left column: which field is live, how many digits are in,
-   or the last error message. */
+/* 左栏的反馈条：显示当前焦点字段、已输入位数或最近的错误信息。 */
+/* 在抬起点画十字，标出映射结果。上方的 readout 用数字描述同一件事，但十字能让
+   我按了 1 却低了一行这种问题在截图里一眼可见，不必反复试。 */
+static void draw_tap_mark(App *app)
+{
+    int x = app->tapX, y = app->tapY;
+    if (x <= 0 && y <= 0) { return; }
+    draw_rect(&app->screen, (Rect){x - 10, y - 1, 21, 3}, 0xD0342C);
+    draw_rect(&app->screen, (Rect){x - 1, y - 10, 3, 21}, 0xD0342C);
+}
+
+/* 绘制状态条：有错误时红底显示错误信息，否则显示当前字段已输入的位数 */
 static void draw_status(App *app, Rect rect, const char *fieldName, const char *buffer)
 {
     char text[96];
@@ -115,16 +174,19 @@ static void draw_status(App *app, Rect rect, const char *fieldName, const char *
     }
 }
 
-/* The keypad block is fully tiled: an exact rectangle first, then the nearest key
-   centre for any point inside the block itself. A finger that lands in the 8 px gutter,
-   or a little high on the top row, still presses what it aimed at - which is the
-   difference between "1 does not respond" and "1 responded". Outside the block the
-   functions return -1, so the buttons in the left column keep their own area. */
+/* 键盘区先做精确矩形命中，再对落在键盘区内的点取最近键心。手指落在 8 像素的
+   间隙里，或在首行稍微偏上，仍能按到想按的键，这正是「1 没反应」和「1 有反应」
+   的区别。键盘区之外返回 -1，左栏按钮因此保有各自的区域。 */
+/* 键盘命中区左边界 */
 #define PAD_LEFT (KEY_X0 - 8)
+/* 键盘命中区右边界 */
 #define PAD_RIGHT (KEY_X0 + 2 * KEY_STEP + KEY_W + 8)
+/* 键盘命中区上边界 */
 #define PAD_TOP (KEY_Y0 - 8)
+/* 键盘命中区下边界 */
 #define PAD_BOTTOM (KEY_Y0 + 3 * KEY_ROW_STEP + KEY_H + 8)
 
+/* 把屏幕坐标换算成按键下标，未命中返回 -1 */
 static int hit_point(int x, int y)
 {
     int best = -1;
@@ -143,6 +205,7 @@ static int hit_point(int x, int y)
     return best;
 }
 
+/* 按键命中：先按抬起点换算，未命中再退回按下点 */
 static int hit_key(const App *app, Event event)
 {
     int key = hit_point(event.x, event.y);
@@ -150,17 +213,7 @@ static int hit_key(const App *app, Event event)
     return key;
 }
 
-/* Create a demo account on first boot so the board is not locked out. */
-void login_init(void)
-{
-    FILE *file = fopen(ACCOUNT_FILE, "r");
-    if (file) { fclose(file); return; }
-    file = fopen(ACCOUNT_FILE, "w");
-    if (!file) { return; }
-    fprintf(file, "123456 123456\n");
-    fclose(file);
-}
-
+/* 判断账号是否已存在于账号文件中 */
 static bool account_exists(const char *user)
 {
     FILE *file = fopen(ACCOUNT_FILE, "r");
@@ -174,6 +227,7 @@ static bool account_exists(const char *user)
     return found;
 }
 
+/* 校验账号与密码是否匹配账号文件中的某一行 */
 static bool credential_ok(const char *user, const char *pass)
 {
     FILE *file = fopen(ACCOUNT_FILE, "r");
@@ -187,6 +241,7 @@ static bool credential_ok(const char *user, const char *pass)
     return ok;
 }
 
+/* 把一组账号密码以一行追加到账号文件末尾 */
 static bool account_append(const char *user, const char *pass)
 {
     FILE *file = fopen(ACCOUNT_FILE, "a");
@@ -196,6 +251,15 @@ static bool account_append(const char *user, const char *pass)
     return true;
 }
 
+/* 创建演示账号，避免板子被锁在登录页外。采用追加而不是重写：data/accounts.txt
+   在重新烧录后仍然存在，若整文件重写，旧版本留下的文件只会保留无法在本面板上
+   输入的 123456；用户自己注册的账号则一律保留。 */
+void login_init(void)
+{
+    if (!account_exists(DEMO_USER)) { account_append(DEMO_USER, DEMO_PASS); }
+}
+
+/* 按当前焦点返回正在编辑的输入缓冲 */
 static char *active_buffer(App *app)
 {
     if (app->login.field == 0) { return app->login.user; }
@@ -203,13 +267,13 @@ static char *active_buffer(App *app)
     return app->login.confirm;
 }
 
+/* 处理一次按键：数字键追加字符，删除键退格或退回上一输入框；确认键由调用方处理 */
 static void press_key(App *app, int index)
 {
     char *buffer = active_buffer(app);
     size_t length = strlen(buffer);
     if (index == 9) {
-        /* Backspace first, then step back to the previous field once empty, so a
-           mistake can be corrected without touching the text boxes. */
+        /* 先退格；当前框已空时再退回上一输入框，这样不必点文本框也能改错。 */
         if (length > 0) {
             buffer[length - 1] = '\0';
         } else if (app->login.field > 0) {
@@ -220,8 +284,8 @@ static void press_key(App *app, int index)
         if (length < MAX_DIGITS) {
             buffer[length] = digit;
             buffer[length + 1] = '\0';
-            /* Auto-advance: a full field moves focus to the next one. The text boxes
-               on this panel cannot be tapped reliably, so they are display-only. */
+            /* 自动跳格：输满 6 位就把焦点移到下一框。本面板的文本框点不准，
+               因此只显示不直接编辑。 */
             if (strlen(buffer) == MAX_DIGITS) {
                 if (app->page == PAGE_LOGIN && app->login.field == 0) {
                     app->login.field = 1;
@@ -235,6 +299,7 @@ static void press_key(App *app, int index)
     app->dirty = true;
 }
 
+/* 登录校验：账号密码都必须是 6 位数字，匹配成功则启动成功动画 */
 static void do_login(App *app)
 {
     Login *login = &app->login;
@@ -244,14 +309,18 @@ static void do_login(App *app)
         return;
     }
     if (credential_ok(login->user, login->pass)) {
+        /* 只记账号，不记密码——日志文件可能被拷走，不能留下明文口令 */
+        log_write(LOG_INFO, "login succeeded: user=%s", login->user);
         login->message[0] = '\0';
         login->fxFrame = 1;
     } else {
+        log_write(LOG_WARN, "login failed: user=%s", login->user);
         snprintf(login->message, sizeof(login->message), "账号或密码错误，请重新输入");
     }
     app->dirty = true;
 }
 
+/* 注册：校验三项均为 6 位、两次密码一致且账号未占用，成功后返回登录页 */
 static void do_register(App *app)
 {
     Login *login = &app->login;
@@ -272,10 +341,12 @@ static void do_register(App *app)
         return;
     }
     if (!account_append(login->user, login->pass)) {
+        log_write(LOG_ERROR, "register failed: cannot write account file, user=%s", login->user);
         snprintf(login->message, sizeof(login->message), "注册失败，无法写入账号文件");
         app->dirty = true;
         return;
     }
+    log_write(LOG_INFO, "register succeeded: user=%s", login->user);
     login->field = 1;
     login->pass[0] = '\0';
     login->confirm[0] = '\0';
@@ -284,18 +355,18 @@ static void do_register(App *app)
     app->dirty = true;
 }
 
-/* The pad sits on the right, the form and the actions on the left; a hairline
-   separates the two zones so the page reads as two columns instead of a pile of
-   boxes. Both listing screens use the same geometry. */
+/* 键盘在右、表单与操作在左，中间用一条细线分隔，让页面读起来是两栏而不是一堆
+   方框。登录与注册两页共用同一套几何。 */
+/* 左右分栏竖线的横坐标 */
 #define COLUMN_RULE_X 416
 
+/* 绘制左右两栏之间的竖向分隔线 */
 static void draw_column_rule(App *app)
 {
     draw_rect(&app->screen, (Rect){COLUMN_RULE_X, 190, 1, 274}, 0xE0DBCE);
 }
 
-/* Shown only when a tap matched nothing: the coordinates are the fastest way to
-   tell a mis-aligned hit box from a panel that reports somewhere else entirely. */
+/* 仅在点击未命中任何控件时显示：坐标是区分命中框画偏与触摸上报错位的最快线索。 */
 static void draw_warning(App *app, int x, int y)
 {
     char line[64];
@@ -304,14 +375,15 @@ static void draw_warning(App *app, int x, int y)
     draw_text(&app->screen, x, y, 15, 0xAD4E3D, line);
 }
 
+/* 绘制登录页：青色页头、两栏布局、数字键盘与演示账号提示 */
 static void render_login(App *app)
 {
     Login *login = &app->login;
     draw_rect(&app->screen, (Rect){0, 0, 800, 480}, UI_BG);
-    /* Hero band: title, one-line hint, and the two fields sit on it. */
+    /* 页头：标题、一行提示与两个输入框都放在上面。 */
     draw_rect(&app->screen, (Rect){0, 0, 800, 188}, UI_TEAL);
     draw_rect(&app->screen, (Rect){0, 188, 800, 4}, 0x1A5F5B);
-    draw_text(&app->screen, 40, 20, 34, 0xFFFFFF, "触控休闲娱乐终端");
+    draw_text(&app->screen, 40, 20, 34, 0xFFFFFF, "交互式多媒体终端");
     draw_text(&app->screen, 40, 64, 15, 0xBAD9D5, "点右侧数字键输入，满 6 位自动跳下一格");
 
     draw_field(app, (Rect){40, 100, 356, 58}, "账号", login->user, login->field == 0, false, true);
@@ -326,13 +398,15 @@ static void render_login(App *app)
 
     ui_button(app, (Rect){40, 250, 360, 60}, "登 录", true);
     ui_button(app, (Rect){40, 322, 360, 60}, "注 册", false);
-    draw_text(&app->screen, 40, 396, 15, UI_MUTED, "演示账号 123456 / 123456");
+    draw_text(&app->screen, 40, 396, 15, UI_MUTED, "演示账号 " DEMO_USER " / " DEMO_PASS);
     draw_tap_readout(app, 40, 420);
     draw_warning(app, 40, 444);
-    /* Build stamp: proof of which binary is running, visible in any screenshot. */
+    draw_tap_mark(app);
+    /* 构建号：标明正在运行的是哪一版程序，任何截图里都能看到。 */
     draw_text(&app->screen, 706, 460, 13, 0x9C8F7B, "build " APP_BUILD);
 }
 
+/* 绘制注册页：三个输入框、数字键盘与输入规则说明 */
 static void render_register(App *app)
 {
     Login *login = &app->login;
@@ -350,18 +424,18 @@ static void render_register(App *app)
 
     ui_button(app, (Rect){40, 250, 360, 60}, "提交注册", true);
 
-    /* The rules, stated once, under the action. */
+    /* 输入规则在操作按钮下方一次说明清楚。 */
     draw_rect(&app->screen, (Rect){40, 322, 360, 64}, 0xEDE7DA);
     draw_rect(&app->screen, (Rect){40, 322, 4, 64}, UI_TEAL);
     draw_text(&app->screen, 60, 331, 15, UI_INK, "账号与密码均为 6 位数字");
     draw_text(&app->screen, 60, 355, 15, UI_MUTED, "重复账号会被拒绝，注册后可立即登录");
     draw_tap_readout(app, 40, 398);
     draw_warning(app, 40, 422);
+    draw_tap_mark(app);
 }
 
-/* Success animation: a teal band opens from the middle, a check mark draws itself,
- * then the greeting fades in. All shapes are rectangles and short lines so the
- * GEC6818 software renderer keeps a steady frame rate. */
+/* 登录成功动画：青色色带从中间展开，对勾逐笔画出，随后淡入欢迎语。全部由矩形和
+   短线段构成，保证 GEC6818 的软件渲染帧率稳定。 */
 static void render_fx(App *app)
 {
     int frame = app->login.fxFrame;
@@ -393,6 +467,7 @@ static void render_fx(App *app)
     }
 }
 
+/* 绘制入口：有动画则画动画，否则按当前页面画登录或注册页 */
 void login_render(App *app)
 {
     if (app->login.fxFrame > 0) { render_fx(app); return; }
@@ -400,6 +475,7 @@ void login_render(App *app)
     render_login(app);
 }
 
+/* 登录与注册页的事件处理：先判文本框与按钮，最后才交给数字键盘 */
 void login_event(App *app, Event event)
 {
     Login *login = &app->login;
@@ -411,18 +487,17 @@ void login_event(App *app, Event event)
     app->missTap = false;
 
     if (app->page == PAGE_LOGIN) {
-        /* The text boxes are display-only: auto-advance moves the caret, and 删除 on
-           an empty field steps back one. They still answer a deliberate tap, but only
-           when the press and the release agree, so a digit lifted slightly high over
-           the hero band can never be eaten by the box above the pad. */
+        /* 文本框只显示不直接编辑：自动跳格移动焦点，空框按删除退回上一格。它们仍会
+           响应明确的点击，但要求按下与抬起两点一致，因此在页头上稍微抬高的数字键
+           点击不会被键盘上方的输入框吃掉。 */
         if (ui_clicked_strict(app, event, (Rect){40, 100, 356, 58})) {
             login->field = 0; app->dirty = true; return;
         }
         if (ui_clicked_strict(app, event, (Rect){404, 100, 356, 58})) {
             login->field = 1; app->dirty = true; return;
         }
-        /* Actions carry 6px of slack; they end at x=400, 92px clear of the nearest
-           key centre, so the pad below can never steal them. */
+        /* 操作按钮有 6 像素余量，右边缘止于 x=400，离最近的键心还有 92 像素，
+           因此下方键盘不会抢走点击。 */
         if (ui_clicked(app, event, (Rect){40, 244, 360, 68})) { do_login(app); return; }
         if (ui_clicked(app, event, (Rect){40, 316, 360, 72})) {
             login->user[0] = '\0';
@@ -465,7 +540,8 @@ void login_event(App *app, Event event)
     }
 }
 
-/* Called from app_tick; returns silently when no animation is running. */
+/* 由 app_tick 调用，逐帧推进成功动画；播完后清空输入并跳到主界面。
+   没有动画运行时直接返回。 */
 void login_fx_tick(App *app)
 {
     if (app->login.fxFrame <= 0) { return; }

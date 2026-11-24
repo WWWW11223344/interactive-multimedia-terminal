@@ -1,4 +1,23 @@
-/* Font adapter derived from Xie's print/font modules. Codex, 2026-11-19: bounded glyph rendering. */
+/******************************************************************************
+Copyright (c), 2026, 汪贤云
+File name:   print.c
+Author:      汪贤云        Version: 1.0.0       Date: 2026-11-20
+Description: 文字绘制适配层。封装第三方 stb_truetype 光栅化器，负责一次性载入随
+             程序打包的可信 TTF 字体、有界 UTF-8 解码、文本宽度计算以及带裁剪的
+             字形 alpha 混合绘制。供所有页面显示中文与英文标签。
+Others:      字形光栅化到固定 96x96 临时缓冲后再混合，宽高超限的字形直接跳过；
+             字体缓冲由 stb_truetype 借用，必须在界面停止使用后才能释放。
+Function List:
+  1. text_open       一次性载入字体文件并初始化光栅化器
+  2. text_close      释放字体缓冲
+  3. read_codepoint  有界 UTF-8 解码，非法字节变成问号
+  4. text_width      计算文本在给定字号下的像素宽度
+  5. draw_text       把文本光栅化并裁剪混合到目标图像
+History:
+  1. Date: 2026-11-20   Author: 汪贤云
+     Modification: 初版；注释按华为编程规范改为中文
+******************************************************************************/
+/* 由谢氏 print/font 模块改编而来。Codex，2026-11-19：限制字形渲染的缓冲范围。 */
 #include "display.h"
 #include "truetype.h"
 #include <stdio.h>
@@ -6,13 +25,14 @@
 static uint8_t *g_fontData;
 static stbtt_fontinfo g_font;
 
-/* Load the bundled, trusted TTF once; the upstream rasterizer borrows this buffer. */
+/* 只载入一次随程序打包的可信 TTF；上游光栅化器借用这块缓冲。 */
 bool text_open(const char *path)
 {
     FILE *file = fopen(path, "rb");
     if (!file) { return false; }
     if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return false; }
     long size = ftell(file);
+    /* 字体文件限制在 12 字节到 32MiB 之间，过小的文件没有意义，过大则拒绝分配。 */
     if (size < 12 || size > 32 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
         fclose(file); return false;
     }
@@ -23,13 +43,13 @@ bool text_open(const char *path)
     return true;
 }
 
-/* Close only after the UI has stopped using the borrowed font bytes. */
+/* 只有在界面停止使用借用的字体字节之后才能关闭。 */
 void text_close(void)
 {
     free(g_fontData); g_fontData = NULL;
 }
 
-/* Decode bounded UTF-8 UI text; malformed bytes become question marks. */
+/* 有界 UTF-8 解码；畸形字节统一变成问号，避免越界读取。 */
 static unsigned int read_codepoint(const unsigned char **text)
 {
     const unsigned char *p = *text;
@@ -46,8 +66,8 @@ static unsigned int read_codepoint(const unsigned char **text)
     return value;
 }
 
-/* Advance width in pixels, summed the same way draw_text advances the cursor, so
-   centred labels land on the pixel the rasterizer actually uses. */
+/* 前进宽度按 draw_text 移动光标的方式累加，这样居中标签才会落在光栅化器实际
+   使用的那个像素上。 */
 int text_width(const char *text, int size)
 {
     if (!g_fontData || !text || size < 8 || size > 72) { return 0; }
@@ -62,7 +82,7 @@ int text_width(const char *text, int size)
     return width;
 }
 
-/* Rasterize into a fixed scratch buffer and alpha blend with clipping on all four edges. */
+/* 光栅化到固定临时缓冲，再与四边裁剪后的目标图像做 alpha 混合。 */
 void draw_text(Image *target, int x, int y, int size, uint32_t rgb, const char *text)
 {
     if (!g_fontData || !target || !target->pixels || !text || size < 8 || size > 72) { return; }

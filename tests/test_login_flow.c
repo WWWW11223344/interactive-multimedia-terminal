@@ -1,64 +1,106 @@
-/* Headless check of the login flow: no window, no hardware, just state transitions. */
+/* 登录流程的无界面检查：无窗口、无硬件，只检查状态转换。
+ *
+ * 按键中心坐标来自 LoginSystem.c 中的 KEY_X0 / KEY_Y0 / KEY_STEP / KEY_ROW_STEP。
+ * 它们曾经按屏幕左侧的键盘硬编码；后来键盘移到了右侧，而本文件在整个版本周期里
+ * 一直点在空白处，由于从未注册到 ctest，还打印出了错误结果。现在它使用断言，并已注册。
+ *
+ * 覆盖两条流程：123456（六个不同的键，覆盖每一列和两行）以及演示账号 678678，
+ * 后者存在是为了能在顶部键盘行不显示任何内容的开发板上输入登录信息。
+ */
 #include "terminal.h"
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 static void click(App *app, int x, int y)
 {
-    Event event;
-    event.type = EVENT_DOWN; event.x = x; event.y = y;
-    app_event(app, event);
-    event.type = EVENT_UP;
-    app_event(app, event);
+    app_event(app, (Event){EVENT_DOWN, x, y});
+    app_event(app, (Event){EVENT_UP, x, y});
 }
 
-static void type_123456(App *app)
+/* 索引：0-8 = 1-9，9 = 删除，10 = 0，11 = 确认。 */
+static void key(App *app, int index)
 {
-    click(app, 88, 257);   /* 1 */
-    click(app, 190, 257);  /* 2 */
-    click(app, 292, 257);  /* 3 */
-    click(app, 88, 317);   /* 4 */
-    click(app, 190, 317);  /* 5 */
-    click(app, 292, 317);  /* 6 */
+    click(app, 432 + (index % 3) * 112 + 52, 190 + (index / 3) * 68 + 30);
+}
+
+static void type_keys(App *app, const int *keys, int count)
+{
+    for (int i = 0; i < count; ++i) { key(app, keys[i]); }
+}
+
+static void clear_fields(App *app)
+{
+    app->login.user[0] = '\0';
+    app->login.pass[0] = '\0';
+    app->login.confirm[0] = '\0';
+    app->login.field = 0;
+    app->login.message[0] = '\0';
+    app->login.fxFrame = 0;
+    app->page = PAGE_LOGIN;
+}
+
+/* 123456 账号在此追加，使本测试不依赖其他测试先运行；若文件中已存在则跳过，
+   以免重复运行时不断追加。 */
+static void ensure_account(void)
+{
+    static char text[8192];
+    size_t length = 0;
+    FILE *file = fopen("data/accounts.txt", "r");
+    if (file) { length = fread(text, 1, sizeof(text) - 1, file); fclose(file); }
+    text[length] = '\0';
+    if (strstr(text, "123456 123456")) { return; }
+    file = fopen("data/accounts.txt", "a");
+    if (file) { fputs("123456 123456\n", file); fclose(file); }
 }
 
 int main(void)
 {
     static App app;
-    if (!app_open(&app, "data/drawings")) { printf("OPEN FAIL\n"); return 1; }
-    printf("1) page=%d (expect %d LOGIN)\n", (int)app.page, (int)PAGE_LOGIN);
+    static const int digits[6] = {0, 1, 2, 3, 4, 5};   /* 1 2 3 4 5 6 */
+    static const int demo[6] = {5, 6, 7, 5, 6, 7};     /* 6 7 8 6 7 8 */
 
-    type_123456(&app);
-    printf("2) user=[%s] (expect 123456)\n", app.login.user);
+    ensure_account();
+    if (!app_open(&app, "data/test-login")) { printf("OPEN FAIL\n"); return 1; }
+    assert(app.page == PAGE_LOGIN);
+    assert(strcmp(app.login.user, "") == 0);
 
-    click(&app, 190, 188);  /* password field */
-    printf("3) field=%d (expect 1)\n", app.login.field);
+    /* 六位数字填满账号输入框，第六位会自动把光标移到下一栏：
+       该界面的文本框仅用于显示。 */
+    type_keys(&app, digits, 6);
+    assert(strcmp(app.login.user, "123456") == 0);
+    assert(app.login.field == 1);
 
-    type_123456(&app);
-    printf("4) pass=[%s] (expect 123456)\n", app.login.pass);
+    type_keys(&app, digits, 6);
+    assert(strcmp(app.login.pass, "123456") == 0);
 
-    click(&app, 292, 437);  /* confirm key */
-    printf("5) fxFrame=%d (expect 1) msg=[%s]\n", app.login.fxFrame, app.login.message);
+    key(&app, 11);
+    assert(app.login.fxFrame > 0);
+    assert(app.login.message[0] == '\0');
 
-    app_render(&app);
-    for (int i = 0; i < 70; ++i) { app_tick(&app); app_render(&app); }
-    printf("6) page=%d (expect %d HOME)\n", (int)app.page, (int)PAGE_HOME);
+    for (int frame = 0; frame <= 60; ++frame) { app_tick(&app); }
+    assert(app.page == PAGE_HOME);
 
-    /* wrong password must stay on login */
-    app.page = PAGE_LOGIN;
-    app.login.fxFrame = 0;
-    app.login.field = 1;
-    app.login.pass[0] = '\0';
-    app.login.pass[1] = '\0';
-    app.login.pass[2] = '\0';
-    app.login.pass[3] = '\0';
-    app.login.pass[4] = '\0';
-    app.login.pass[5] = '\0';
-    type_123456(&app);
+    /* 密码错误时会停留在登录界面并给出原因。 */
+    clear_fields(&app);
+    type_keys(&app, digits, 6);
+    type_keys(&app, digits, 6);
     app.login.pass[5] = '9';
-    click(&app, 292, 437);
-    printf("7) wrong-pass page=%d (expect %d LOGIN) msg=[%s]\n",
-           (int)app.page, (int)PAGE_LOGIN, app.login.message);
+    key(&app, 11);
+    assert(app.page == PAGE_LOGIN);
+    assert(app.login.fxFrame == 0);
+    assert(strlen(app.login.message) > 0);
+
+    /* 登录界面宣传的账号必须真的能登录。它只由 6/7/8 组成，
+       因此即使在 1/2/3 那一行不显示任何内容的开发板上也能输入。 */
+    clear_fields(&app);
+    type_keys(&app, demo, 6);
+    assert(strcmp(app.login.user, "678678") == 0);
+    type_keys(&app, demo, 6);
+    key(&app, 11);
+    assert(app.login.fxFrame > 0);
 
     app_close(&app);
+    puts("login flow: ok");
     return 0;
 }

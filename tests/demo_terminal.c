@@ -1,4 +1,4 @@
-/* Codex, 2026-11-19: replay real application events for an explicitly labelled software demo. */
+/* Codex，2026-11-19：重放真实的应用事件，用于明确标注的软件演示。 */
 #include "terminal.h"
 #include <assert.h>
 #include <stdio.h>
@@ -18,7 +18,7 @@ static App g_app;
 static FILE *g_index;
 static unsigned int g_frame;
 
-/* Key frames are C-rendered; the video tool only adds explanatory captions. */
+/* 关键帧由 C 渲染；视频工具只添加说明性字幕。 */
 static void save_frame(unsigned int durationMs, const char *caption)
 {
     char path[128]; snprintf(path,sizeof(path),"build-demo/frame_%03u.bmp",g_frame);
@@ -26,13 +26,13 @@ static void save_frame(unsigned int durationMs, const char *caption)
     fprintf(g_index,"%03u\t%u\t%s\n",g_frame++,durationMs,caption);
 }
 
-/* Activate a control through the production input dispatcher. */
+/* 通过正式的输入分发器激活控件。 */
 static void click(int x, int y)
 {
     app_event(&g_app,(Event){EVENT_DOWN,x,y}); app_event(&g_app,(Event){EVENT_UP,x,y});
 }
 
-/* Capture progressive strokes so the demonstration shows the real interpolation. */
+/* 逐段采集笔画，使演示展示真实的插值过程。 */
 static void stroke(int x0, int y0, int x1, int y1)
 {
     app_event(&g_app,(Event){EVENT_DOWN,x0,y0});
@@ -43,7 +43,7 @@ static void stroke(int x0, int y0, int x1, int y1)
     app_event(&g_app,(Event){EVENT_UP,x1,y1});
 }
 
-/* All generated artwork is isolated from the user's persistent data directory. */
+/* 所有生成的作品都与用户的持久化数据目录隔离。 */
 int main(void)
 {
     char directory[128]; snprintf(directory,sizeof(directory),"data/test-demo-%d",(int)process_id());

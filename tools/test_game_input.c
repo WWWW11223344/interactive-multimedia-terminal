@@ -1,5 +1,5 @@
-/* Headless check that the 2048 direction cards and swipes actually move the board,
- * including the vertical drift the gslx680 shows on the real panel.
+/* 无界面检查：2048 的方向卡片和滑动确实能移动棋盘，
+ * 包括在真实面板上 gslx680 所表现出的纵向漂移的情况。
  * Codex, 2026-11-19. */
 #include "terminal.h"
 #include <stdio.h>
@@ -19,7 +19,7 @@ static void tap(App *app, int x, int y)
     app_event(app, (Event){EVENT_UP, x, y});
 }
 
-/* One tile on a known cell, game already running so no spawn from a fresh start. */
+/* 在一个已知格子上放一个方块，游戏已在进行中，因此不会因新开局而额外生成方块。 */
 static void seed_at(App *app, int index)
 {
     memset(&app->game, 0, sizeof(app->game));
@@ -28,7 +28,7 @@ static void seed_at(App *app, int index)
     app->game.cells[index] = 2;
 }
 
-/* Card centres, from g_dir in GameSystem.c: 上(496,170) 下(496,342) 左(688,170) 右(688,342) */
+/* 卡片中心，取自 GameSystem.c 中的 g_dir：上(496,170) 下(496,342) 左(688,170) 右(688,342) */
 #define UP_X 496
 #define UP_Y 170
 #define DOWN_X 496
@@ -63,8 +63,8 @@ int main(void)
     tap(&app, DOWN_X, DOWN_Y);
     expect(app.game.cells[12] != 0, "down card moves the tile to the bottom edge");
 
-    /* The panel reports up to ~70px away from the visual position; a card is 168px
-       tall, so the same tap one card-height/2.4 lower must still pick that card. */
+    /* 面板上报的位置最多可偏离视觉位置约 70px；一张卡片高 168px，
+       所以同样的点击向下偏移卡片高度的 1/2.4 时仍必须选中该卡片。 */
     seed_at(&app, 12);
     tap(&app, UP_X, UP_Y + 70);
     expect(app.game.cells[0] != 0, "up card still fires with the point 70px low");
@@ -77,18 +77,18 @@ int main(void)
     tap(&app, UP_X + 60, UP_Y + 60);
     expect(app.game.cells[0] != 0, "a diagonal offset inside the card still means up");
 
-    /* Press inside a card, lift outside the grid: the press point decides. */
+    /* 在卡片内按下，在棋盘外抬起：以按下点为准。 */
     seed_at(&app, 0);
     app_event(&app, (Event){EVENT_DOWN, 700, 300});
     app_event(&app, (Event){EVENT_UP, 790, 470});
     expect(app.game.cells[3] != 0, "a press on a card still counts when the lift lands elsewhere");
 
-    /* Not started yet: the first press starts the game instead of doing nothing. */
+    /* 尚未开始：第一次按下会启动游戏，而不是什么都不做。 */
     memset(&app.game, 0, sizeof(app.game));
     tap(&app, LEFT_X, LEFT_Y);
     expect(app.game.started, "pressing a card starts a fresh game");
 
-    /* Swipe on the board, release sample snapping back to the press point. */
+    /* 在棋盘上滑动，抬起时的采样点回弹到按下点。 */
     seed_at(&app, 3);
     app_event(&app, (Event){EVENT_DOWN, 300, 300});
     app_event(&app, (Event){EVENT_MOVE, 40, 302});
@@ -107,7 +107,7 @@ int main(void)
     app_event(&app, (Event){EVENT_UP, 198, 400});
     expect(app.game.cells[12] != 0, "a downward swipe on the board moves tiles down");
 
-    /* A short press on the board with no movement is not a swipe. */
+    /* 在棋盘上短按且不移动，不算滑动。 */
     seed_at(&app, 0);
     tap(&app, 200, 300);
     expect(app.missTap && app.game.cells[0] != 0, "a still tap on the board just reports a miss");

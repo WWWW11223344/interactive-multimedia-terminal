@@ -1,6 +1,6 @@
-/* Headless check of the two compact toolbars: seven colour chips and three brush
- * buttons on the canvas, plus the photo-page navigation row. Each is verified to work
- * at its centre and with the vertical error the gslx680 reports on the real panel.
+/* 两条紧凑工具栏的无界面检查：画布上的七个颜色块和三个笔刷按钮，
+ * 以及图片页的导航栏。每一处都验证其在中心点可用，
+ * 并且在真实面板上 gslx680 所上报的纵向误差下也可用。
  * Codex, 2026-11-20. */
 #include "terminal.h"
 #include <stdio.h>
@@ -20,7 +20,7 @@ static void tap(App *app, int x, int y)
     app_event(app, (Event){EVENT_UP, x, y});
 }
 
-/* Same geometry as swatch_rect()/brush_rect() in WhiteboardSystem.c. */
+/* 与 WhiteboardSystem.c 中的 swatch_rect()/brush_rect() 相同的几何布局。 */
 static int chip_x(int i) { return 24 + i * 62 + 28; }
 static int brush_x(int i) { return 470 + i * 80 + 36; }
 static const int chip_y = 116;
@@ -51,8 +51,8 @@ int main(void)
         expect(app.radius == radii[i], what);
     }
 
-    /* The chips are 56px tall; a report 34px high or low must still pick the chip
-       under the finger instead of falling into the gap between two of them. */
+    /* 颜色块高 56px；上报点偏高或偏低 34px 时，仍必须选中手指下的颜色块，
+       而不是落进两个颜色块之间的缝隙。 */
     app.color = 0; tap(&app, chip_x(3), chip_y + 34);
     expect(app.color == 3, "chip 3 still fires with the point 34px low");
     app.color = 0; tap(&app, chip_x(5), chip_y - 34);
@@ -60,16 +60,16 @@ int main(void)
     app.radius = 3; tap(&app, brush_x(2), brush_y + 34);
     expect(app.radius == 7, "粗 still fires with the point 34px low");
 
-    /* A point between two chips resolves to the nearer one, never to nothing. */
+    /* 两个颜色块之间的点会解析到较近的那个，绝不会落空。 */
     app.color = 0; tap(&app, 24 + 62 - 1, chip_y);
     expect(app.color == 0 || app.color == 1, "the seam between chips picks a neighbour");
 
-    /* Taps well outside the toolbar must not silently change the brush. */
+    /* 在工具栏之外的点击绝不能悄悄改变笔刷。 */
     app.color = 2; app.radius = 3;
     tap(&app, 400, 300);
     expect(app.color == 2 && app.radius == 3, "a tap on the canvas leaves the tools alone");
 
-    /* Colour actually reaches the stroke: pick red, draw, read the pixel back. */
+    /* 颜色确实传导到了笔画上：选红色、绘制、再读回像素验证。 */
     app.color = 0; app.radius = 3;
     app.page = PAGE_BOARD;
     tap(&app, chip_x(1), chip_y);
@@ -78,7 +78,7 @@ int main(void)
     app_event(&app, (Event){EVENT_UP, 160, 200});
     expect(app.drawing.pixels[(200-156)*752 + (140-24)] == 0xCA554D, "the stroke uses the selected colour");
 
-    /* Slim brush then thick brush leave different widths on the same pixel column. */
+    /* 细笔刷和粗笔刷在同一像素列上留下不同的宽度。 */
     tap(&app, brush_x(0), brush_y);
     app_event(&app, (Event){EVENT_DOWN, 300, 300});
     app_event(&app, (Event){EVENT_UP, 300, 300});
@@ -95,7 +95,7 @@ int main(void)
     snprintf(what, sizeof(what), "细 paints %u rows, 粗 paints %u rows", thin, thick);
     expect(thick > thin + 6, what);
 
-    /* Photo page navigation: the row is 64px tall at the bottom edge. */
+    /* 图片页导航：底边这一行高 64px。 */
     if (album_scan(&app) && app.album.count >= 2) {
         app.page = PAGE_PHOTO;
         app.album.selected = 0;

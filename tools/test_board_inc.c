@@ -1,5 +1,5 @@
-/* Headless check of the whiteboard incremental path: a stroke must land in both the
- * saved drawing and the visible frame, and must report only a small dirty rectangle.
+/* 白板增量路径的无界面检查：一笔必须同时落在保存的画作和可见画面中，
+ * 并且只上报一个很小的脏矩形。
  * Codex, 2026-11-19. */
 #include "terminal.h"
 #include <stdio.h>
@@ -42,7 +42,7 @@ int main(void)
 
     image_save("shots/board_stroke.bmp", &app.screen);
 
-    /* Back to a full render: the canvas is re-blitted, nothing is lost. */
+    /* 回到全量渲染：画布重新拷贝，不会丢失任何内容。 */
     app.dirty = true;
     app_render(&app);
     expect(app.screen.pixels[260*800+240] != 0xFFFFFF, "stroke survives a full repaint");

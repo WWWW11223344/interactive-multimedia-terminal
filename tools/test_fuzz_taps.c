@@ -1,5 +1,5 @@
-/* Randomised tap sweep over every page: no crash, no out-of-range page, no division by
- * zero when the album is empty. Cheap insurance before flashing a new build.
+/* 对每一页进行随机点击扫射：不崩溃、不出现越界的页面，相册为空时也不发生除零。
+ * 刷入新版本前的一道廉价保险。
  * Codex, 2026-11-21. */
 #include "terminal.h"
 #include <dirent.h>
@@ -9,8 +9,8 @@
 
 static unsigned int g_seed = 20261121u;
 
-/* The sweep will hit 保存 sooner or later; give it a private directory so the user's
-   own drawings are never touched, and delete what it wrote before leaving. */
+/* 扫射迟早会点到 保存；给它一个私有目录，以免碰到用户自己的画作，
+   并在离开前删掉它写下的内容。 */
 #define FUZZ_DIR "data/test-fuzz"
 
 static void clear_fuzz_dir(void)
@@ -46,8 +46,8 @@ int main(void)
         app.page = pages[pass];
         app.dirty = true;
         for (int i = 0; i < 600; ++i) {
-            /* Keep the sweep on the page under test: a 返回 tap would otherwise move
-               the remaining taps to the home screen and hide coverage gaps. */
+            /* 把扫射限制在被测试的页面上：否则一次 返回 点击会把后续点击带到主界面，
+               从而掩盖覆盖盲区。 */
             app.page = pages[pass];
             int x = next_int(800), y = next_int(480);
             app_event(&app, (Event){EVENT_DOWN, x, y});
@@ -55,9 +55,9 @@ int main(void)
             app_event(&app, (Event){EVENT_UP, x, y});
             app_tick(&app);
             if (next_int(40) == 0) { app_render(&app); }
-            if (app.login.fxFrame > 0) { app_render(&app); }   /* the animation replaces the page */
+            if (app.login.fxFrame > 0) { app_render(&app); }   /* 动画替换了页面 */
             if (app.page > PAGE_BOARD) { fprintf(stderr, "FAIL page out of range: %d\n", (int)app.page); return 1; }
-            /* Leave the animation so the next taps land on a real page again. */
+            /* 退出动画，让后续点击重新落在真实页面上。 */
             if (app.login.fxFrame > 55) { for (int f = 0; f < 8; ++f) { app_tick(&app); } }
             if (app.page == PAGE_PHOTO && app.album.count == 0) { app.page = PAGE_ALBUM; }
         }

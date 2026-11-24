@@ -1,5 +1,5 @@
-/* Exhaustive check of the slide rules: every column pattern in every direction,
- * compared against a reference written a second, independent way.
+/* 滑动规则的穷举检查：对每一个方向上每一种列组合，
+ * 都与用另一种独立方式编写的参考实现进行比较。
  * Codex, 2026-11-19. */
 #include "game.h"
 #include <stdio.h>
@@ -7,13 +7,13 @@
 
 static int failures;
 
-/* Reference: gravity by repeated single-step shifts from the destination edge.
- * Deliberately not the same traversal as game_slide, so a mapping error shows up. */
+/* 参考实现：从目标边缘开始反复单步移动来实现重力。
+ * 刻意采用与 game_slide 不同的遍历方式，以便暴露映射错误。 */
 static void reference(int col[4], int dir, int out[4])
 {
     int v[4];
     for (int i = 0; i < 4; ++i) { v[i] = col[i]; }
-    /* dir: 0 down, 1 up - only vertical, which is where the report is. */
+    /* dir：0 向下，1 向上 —— 只涉及纵向，问题正出在这里。 */
     for (int pass = 0; pass < 3; ++pass) {
         if (dir == 0) {
             for (int i = 3; i > 0; --i) { if (v[i] == 0) { v[i] = v[i-1]; v[i-1] = 0; } }
@@ -21,7 +21,7 @@ static void reference(int col[4], int dir, int out[4])
             for (int i = 0; i < 3; ++i) { if (v[i] == 0) { v[i] = v[i+1]; v[i+1] = 0; } }
         }
     }
-    /* One merge per tile, from the destination edge. */
+    /* 每个方块只合并一次，从目标边缘开始。 */
     if (dir == 0) {
         for (int i = 3; i > 0; --i) {
             if (v[i] && v[i] == v[i-1]) { ++v[i]; v[i-1] = 0; }

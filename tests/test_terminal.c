@@ -1,4 +1,4 @@
-/* Codex, 2026-11-19: regression tests for inherited merge, image-boundary and UI integration defects. */
+/* Codex，2026-11-19：针对遗留的合并、图像边界和界面集成缺陷的回归测试。 */
 #include "terminal.h"
 #include <assert.h>
 #include <stdio.h>
@@ -16,7 +16,7 @@
 #define remove_dir rmdir
 #endif
 
-/* Pixel mass detects tile loss, duplication and spawns after unchanged moves. */
+/* 像素总量可检测瓦片丢失、重复，以及无效移动后仍生成新块的问题。 */
 static unsigned int tile_mass(const Game *game)
 {
     unsigned int sum = 0;
@@ -24,7 +24,7 @@ static unsigned int tile_mass(const Game *game)
     return sum;
 }
 
-/* Verify one merge per input tile, all directions, no-op and terminal states. */
+/* 验证每个输入瓦片只合并一次，以及各方向、无操作和终局状态。 */
 static void test_game(void)
 {
     Game game = {.cells={1,1,1,1}, .started=true};
@@ -59,7 +59,7 @@ static void test_game(void)
     puts("PASS: 2048 merge/directions/no-op/score/win/loss and 20000 mass checks");
 }
 
-/* Round-trip odd-width BMP rows, high colour bytes, malformed headers and truncation. */
+/* 对奇数宽度 BMP 行、高位颜色字节、畸形头部和截断进行往返测试。 */
 static void test_images(const char *directory)
 {
     char path[PATH_CAPACITY]; snprintf(path,sizeof(path),"%s/padding.bmp",directory);
@@ -73,7 +73,7 @@ static void test_images(const char *directory)
     FILE *file = fopen(path,"r+b"); assert(file);
     unsigned char header[54], rows[24];
     assert(fread(header,1,54,file) == 54 && fread(rows,1,24,file) == 24);
-    header[22] = 0xfe; header[23] = header[24] = header[25] = 0xff; /* top-down height -2 */
+    header[22] = 0xfe; header[23] = header[24] = header[25] = 0xff; /* 自顶向下，高度为 -2 */
     rewind(file); assert(fwrite(header,1,54,file) == 54);
     assert(fwrite(rows+12,1,12,file) == 12 && fwrite(rows,1,12,file) == 12); assert(fclose(file) == 0);
     assert(image_load(path,&loaded)); assert(memcmp(original.pixels,loaded.pixels,sizeof(colors)) == 0);
@@ -82,7 +82,7 @@ static void test_images(const char *directory)
     assert(!image_load(path,&loaded) && !loaded.pixels);
     file = fopen(path,"wb"); assert(file); fputs("not a bitmap",file); fclose(file);
     assert(!image_load(path,&loaded));
-    /* A 32-bit high-byte colour must decode identically on signed-char targets. */
+    /* 32 位高位颜色字节必须在 signed-char 目标平台上解码一致。 */
     unsigned char bmp32[58] = {'B','M',58,0,0,0,0,0,0,0,54,0,0,0,40,0,0,0,1,0,0,0,
         1,0,0,0,1,0,32,0,0,0,0,0,4,0,0,0};
     bmp32[54] = 0xEF; bmp32[55] = 0xCD; bmp32[56] = 0xAB; bmp32[57] = 0x80;
@@ -94,32 +94,40 @@ static void test_images(const char *directory)
     puts("PASS: BMP padding/high bytes/top-down/truncation/invalid dimensions and edge clipping");
 }
 
-/* Drive the same press/release boundary as the real touchscreen. */
+/* 模拟与真实触摸屏相同的按下/抬起边界。 */
 static void click(App *app, int x, int y)
 {
     app_event(app,(Event){EVENT_DOWN,x,y}); app_event(app,(Event){EVENT_UP,x,y});
 }
 
-/* Save the actual C-rendered frame for visual review, with no separate mock UI. */
+/* 保存实际由 C 渲染的画面供目视检查，不使用单独的模拟界面。 */
 static void screenshot(App *app, const char *name)
 {
     char path[PATH_CAPACITY]; snprintf(path,sizeof(path),"docs/screenshots/%s.bmp",name);
     app_render(app); assert(image_save(path,&app->screen));
 }
 
-/* The demo account is the one the login screen advertises; appending it keeps any
-   account a previous run registered, and credential_ok stops at the first match. */
+/* 演示账号就是登录界面宣传的那个账号。若文件中已存在则跳过：
+   过去每次运行都追加一行，导致 data/accounts.txt 每个测试增加一行，
+   累积到四十行完全相同的内容才被人发现。 */
 static void ensure_demo_account(void)
 {
-    FILE *file = fopen("data/accounts.txt","a");
-    if (file) { fputs("123456 123456\n",file); fclose(file); }
+    static char text[8192];
+    size_t length = 0;
+    FILE *file = fopen("data/accounts.txt","r");
+    if (file) { length = fread(text,1,sizeof(text)-1,file); fclose(file); }
+    text[length] = '\0';
+    if (strstr(text,"678678 678678")) { return; }
+    file = fopen("data/accounts.txt","a");
+    if (file) { fputs("678678 678678\n",file); fclose(file); }
 }
 
-/* Type 123456 twice on the nine-grid keypad, press 确认, then let the animation run:
-   the same path a user takes from power-on to the home screen. */
+/* 在九宫格键盘上输入两次演示账号，按下 确认，然后让动画播放完毕：
+   这与用户从开机到主界面的操作路径一致。选择 678678 是为了在 1/2/3 那一行
+   不显示任何内容的开发板上也能输入；使用 123456 的六个按键路径由 login_flow_tests 覆盖。 */
 static void sign_in(App *app)
 {
-    static const int keys[6] = {0,1,2,3,4,5};
+    static const int keys[6] = {5,6,7,5,6,7};
     for (int round = 0; round < 2; ++round) {
         for (int i = 0; i < 6; ++i) {
             click(app,432 + (keys[i] % 3) * 112 + 52, 190 + (keys[i] / 3) * 68 + 30);
@@ -131,7 +139,7 @@ static void sign_in(App *app)
     assert(app->page == PAGE_HOME);
 }
 
-/* End-to-end save->rescan->thumbnail->photo, plus game/start/restart/navigation. */
+/* 端到端测试：保存→重新扫描→缩略图→照片，以及游戏进入/开始/重新开始/导航。 */
 static void test_app(const char *directory)
 {
     static App app;
@@ -147,7 +155,7 @@ static void test_app(const char *directory)
     app_event(&app,(Event){EVENT_MOVE,220,220}); app_event(&app,(Event){EVENT_MOVE,330,350});
     app_event(&app,(Event){EVENT_UP,110,350});
     assert(app.drawing.pixels[(350-156)*752+110-24] == 0xCA554D);
-    click(&app,235,110); /* green */
+    click(&app,235,110); /* 绿色 */
     app_event(&app,(Event){EVENT_DOWN,410,350});
     app_event(&app,(Event){EVENT_MOVE,410,225}); app_event(&app,(Event){EVENT_MOVE,590,225});
     app_event(&app,(Event){EVENT_MOVE,590,350}); app_event(&app,(Event){EVENT_UP,410,350});
@@ -167,15 +175,15 @@ static void test_app(const char *directory)
     /* 相册 → 小游戏列表（四个入口）→ 2048 */
     click(&app,50,40); click(&app,350,250); assert(app.page == PAGE_GAMES);
     screenshot(&app,"05-games");
-    click(&app,212,180); assert(app.page == PAGE_2048);
+    click(&app,400,285); assert(app.page == PAGE_2048);
     click(&app,680,40); assert(app.game.started);
     for (int i = 0; i < 12; ++i) { click(&app,i%2 ? 680 : 490,300); click(&app,496,170); }
     screenshot(&app,"06-game");
     click(&app,680,40); assert(app.game.score == 0 && !app.game.over);
-    /* 返回 climbs one level: leaving a game lands on the list, not on the home screen. */
+    /* 返回 只上升一级：离开游戏后回到列表，而不是主界面。 */
     click(&app,50,40); assert(app.page == PAGE_GAMES);
     /* 五子棋：玩家落天元，电脑必须应手，所以盘上至少两子 */
-    click(&app,588,180); assert(app.page == PAGE_GOMOKU);
+    click(&app,400,341); assert(app.page == PAGE_GOMOKU);
     click(&app,30+7*25,96+7*25);
     {
         int stones = 0;
@@ -185,7 +193,7 @@ static void test_app(const char *directory)
     screenshot(&app,"07-gomoku");
     click(&app,50,40); assert(app.page == PAGE_GAMES);
     /* 井字棋：玩家左上角落子，电脑立即应手 */
-    click(&app,212,348); assert(app.page == PAGE_TOE);
+    click(&app,400,397); assert(app.page == PAGE_TOE);
     click(&app,100,148);                 /* 左上格中心（格心 112px，棋盘 44,92 起） */
     {
         int stones = 0;
@@ -195,7 +203,7 @@ static void test_app(const char *directory)
     screenshot(&app,"08-toe");
     click(&app,50,40); assert(app.page == PAGE_GAMES);
     /* 中国象棋：选中红兵前进一格，轮到黑方 */
-    click(&app,588,348); assert(app.page == PAGE_CHESS);
+    click(&app,400,453); assert(app.page == PAGE_CHESS);
     click(&app,30,100+6*37); assert(app.chess.sel == 6*9);      /* 红兵：格心 30,322 */
     click(&app,30,100+5*37); assert(app.chess.cell[5*9] == 7 && app.chess.side == -1);
     click(&app,30,100+3*37); assert(app.chess.sel == 3*9);      /* 黑卒可选中，过河后才能横走 */
@@ -205,29 +213,29 @@ static void test_app(const char *directory)
     click(&app,600,250); assert(app.page == PAGE_BOARD);
     click(&app,585,40); assert(app.drawing.pixels[0] == 0xFFFFFF);
     click(&app,50,40);
-    /* Either endpoint counts, because the panel's press and release samples rarely
-       agree: a drag that starts on a card opens it. */
+/* 任一端点都算数，因为开发板的按下与抬起采样很少一致：
+   从卡片上开始的拖动会打开它。 */
     app_event(&app,(Event){EVENT_DOWN,110,250}); app_event(&app,(Event){EVENT_UP,400,50});
     assert(app.page == PAGE_ALBUM);
     click(&app,50,40); assert(app.page == PAGE_HOME);
-    /* A cancelled gesture activates nothing at all. */
+    /* 取消的手势不会触发任何操作。 */
     app_event(&app,(Event){EVENT_DOWN,110,250}); app_event(&app,(Event){EVENT_CANCEL,0,0});
     app_event(&app,(Event){EVENT_UP,110,250}); assert(app.page == PAGE_HOME);
-    /* Corrupt files and count limits must remain navigable, without overrunning path storage. */
+    /* 损坏的文件和数量上限下仍须能正常导航，且不能越界写坏路径缓冲区。 */
     for (int i = 0; i < 130; ++i) {
         char path[PATH_CAPACITY]; snprintf(path,sizeof(path),"%s/corrupt_%03d.bmp",directory,i);
         FILE *file = fopen(path,"wb"); assert(file); fputs("bad",file); fclose(file);
     }
     assert(album_scan(&app) && app.album.limited && app.album.count == ALBUM_LIMIT);
     app.page = PAGE_ALBUM;
-    click(&app,100,140); assert(app.page == PAGE_PHOTO); /* corrupt entry: error or valid drawing */
+    click(&app,100,140); assert(app.page == PAGE_PHOTO); /* 损坏条目：报错或显示有效画面 */
     app_render(&app); click(&app,520,445); app_render(&app);
     app_close(&app);
     puts("PASS: login/home/album/photo/2048/五子棋/井字棋/象棋/board navigation, brush-colour-clear, "
          "unique saves, album paging, game restart and drag cancellation");
 }
 
-/* Test folders are unique to this process; cleanup never touches the user's drawings. */
+/* 测试文件夹对本进程唯一；清理操作绝不会触及用户的作品。 */
 int main(void)
 {
     char directory[128]; snprintf(directory,sizeof(directory),"data/test-%d",(int)process_id());

@@ -1,5 +1,5 @@
-/* Headless check that every album cell - especially the top row - opens its own
- * picture, including with the vertical drift the gslx680 shows on the real panel.
+/* 无界面检查：相册的每一个格子，尤其是顶行，都能打开各自的图片，
+ * 包括在真实面板上 gslx680 所表现出的纵向漂移的情况。
  * Codex, 2026-11-19. */
 #include "terminal.h"
 #include <stdio.h>
@@ -19,8 +19,8 @@ static void tap(App *app, int x, int y)
     app_event(app, (Event){EVENT_UP, x, y});
 }
 
-/* Same geometry as thumb_cell() in AlbumSystem.c, written out so a silent change
-   there shows up as a test failure rather than as a wrong picture. */
+/* 与 AlbumSystem.c 中 thumb_cell() 相同的几何布局，这里显式写出来，
+   这样那边一旦悄悄改动，就会表现为测试失败，而不是一张错误的图片。 */
 static int cell_x(int column) { return 24 + column * 252 + 126; }
 static int cell_y(int row) { return 86 + row * 162 + 81; }
 
@@ -42,7 +42,7 @@ int main(void)
         expect(app.page == PAGE_PHOTO && app.album.selected == (size_t)i, what);
     }
 
-    /* Top row with the reported point 60px low and 60px high: still that picture. */
+    /* 顶行在上报点偏低 60px 和偏高 60px 时：仍然打开同一张图片。 */
     app.page = PAGE_ALBUM; app.album.selected = 99;
     tap(&app, cell_x(0), cell_y(0) + 60);
     expect(app.page == PAGE_PHOTO && app.album.selected == 0, "top-left still opens with the point 60px low");
@@ -51,7 +51,7 @@ int main(void)
     tap(&app, cell_x(2), cell_y(0) - 60);
     expect(app.page == PAGE_PHOTO && app.album.selected == 2, "top-right still opens with the point 60px high");
 
-    /* The point between the two rows must resolve to one of them, never to nothing. */
+    /* 两行之间的点必须落到其中一行，绝不能落空。 */
     app.page = PAGE_ALBUM; app.album.selected = 99;
     tap(&app, cell_x(1), 247);
     expect(app.page == PAGE_PHOTO && app.album.selected == 1, "the seam between the rows is not a dead band");
@@ -60,7 +60,7 @@ int main(void)
     tap(&app, cell_x(1), 249);
     expect(app.page == PAGE_PHOTO && app.album.selected == 4, "just below the seam picks the bottom row");
 
-    /* Inside the photo page the three buttons still work. */
+    /* 在图片页面内，三个按钮仍然可用。 */
     app.page = PAGE_PHOTO; app.album.selected = 0;
     tap(&app, 240, 447);
     expect(app.album.selected + 1 == app.album.count, "上一张 wraps to the last picture");
