@@ -15,9 +15,10 @@ __pycache__/
 *.o
 *.d
 /docs/screenshots/*.bmp
-# 测试临时文件
+# 测试临时文件与 Office 锁文件
 test-logger-tmp.log
 *.tmp
+~$*
 # 编辑器配置与改名前的废弃文档归档
 /.vscode/
 /docs/archive/
